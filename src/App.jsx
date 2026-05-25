@@ -558,7 +558,7 @@ function OffTrailApp() {
 }
 
 function LandingPage() {
-  const { setModal, setView, auth } = useOffTrail();
+  const { setModal, setView, setMenuOpen, setAccountOpen, accountOpen, auth, openPlanner } = useOffTrail();
   const openArchive = () => {
     if (auth.isAuthenticated) {
       setView("dashboard");
@@ -569,84 +569,131 @@ function LandingPage() {
 
   return (
     <AppShell active="explore" className="landing-page">
-      <section className="gf-foundation-hero">
-        <div className="gf-hero-copy">
-          <div className="gf-hero-gem" aria-hidden="true">
-            <Gem size={42} />
-          </div>
-          <p className="gf-eyebrow">AI route discovery</p>
-          <h1>
-            Discover every <span className="gf-italic">hidden gem</span> on your path
-          </h1>
-          <p>
-            AI-powered journey discovery for routes, layovers, and nearby exploration - uncover hidden gems,
-            viewpoints, gardens, local favorites, and photogenic places most travelers miss.
-          </p>
-          <div className="gf-hero-actions">
-            <button className="gf-primary-button" type="button" onClick={() => setModal("planner")}>
-              <Route size={18} />
-              Plan My Route
-            </button>
-            <button className="gf-secondary-button" type="button" onClick={() => setModal("exploreAround")}>
-              <Compass size={18} />
-              Explore Around You
-            </button>
-          </div>
-          <div className="gf-chip-row" aria-label="Feature categories">
-            <span><Gem size={14} /> Hidden gems</span>
-            <span><Camera size={14} /> Photo spots</span>
-            <span><Compass size={14} /> Local favorites</span>
-          </div>
-        </div>
-        <div className="gf-hero-side">
-          <div className="gf-bento-grid">
-            <button className="gf-feature-card gf-feature-card-large" type="button" onClick={() => setModal("exploreAround")}>
-              <span className="gf-feature-icon cyan"><Compass size={25} /></span>
-              <span className="gf-feature-copy">
-                <strong>Explore Around You</strong>
-                <small>Use radar to find nearby gems based on time and mood</small>
-              </span>
-              <ArrowRight size={20} className="gf-feature-arrow" />
-            </button>
-            <button className="gf-feature-card" type="button" onClick={() => setModal("planner")}>
-              <span className="gf-feature-icon blue"><Navigation size={24} /></span>
-              <strong>AI Route Planning</strong>
-              <small>Smart algorithms find every POI along your path</small>
-            </button>
-            <button className="gf-feature-card" type="button" onClick={openArchive}>
-              <span className="gf-feature-icon purple"><MapIcon size={24} /></span>
-              <strong>Discovery Archive</strong>
-              <small>Save and revisit favorite hidden spots</small>
-            </button>
-          </div>
-          <div className="gf-visual-card" aria-hidden="true">
-            <svg className="gf-route-preview" viewBox="0 0 560 360" role="img">
-              <defs>
-                <linearGradient id="gfPreviewGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#adc6ff" />
-                  <stop offset="50%" stopColor="#ddb7ff" />
-                  <stop offset="100%" stopColor="#4cd7f6" />
-                </linearGradient>
-              </defs>
-              <path className="gf-route-base" d="M52 294 C130 258 158 128 260 154 S394 292 505 68" />
-              <path className="gf-route-line" d="M52 294 C130 258 158 128 260 154 S394 292 505 68" />
-              <path className="gf-route-branch branch-one" d="M180 190 C154 150 126 120 92 98" />
-              <path className="gf-route-branch branch-two" d="M330 210 C352 176 386 152 424 142" />
-              <circle className="gf-endpoint" cx="52" cy="294" r="8" />
-              <circle className="gf-endpoint end" cx="505" cy="68" r="8" />
-            </svg>
-            {[
-              ["Hidden garden", "18%", "27%", Gem],
-              ["Photo overlook", "74%", "40%", Camera],
-              ["Local cafe", "48%", "68%", Compass]
-            ].map(([label, left, top, Icon], index) => (
-              <span className="gf-preview-pin" style={{ left, top, animationDelay: `${index * 180}ms` }} key={label}>
-                <Icon size={15} />
-                <small>{label}</small>
-              </span>
-            ))}
+      <section className="gf-bloom-layout" aria-label="OffTrail route discovery landing">
+        <div className="gf-bloom-left">
+          <div className="gf-bloom-left-glass liquid-glass-strong" aria-hidden="true" />
+          <div className="gf-bloom-content">
+            <nav className="gf-bloom-panel-nav" aria-label="Landing navigation">
+              <button className="gf-bloom-logo" type="button" onClick={() => setView("home")} aria-label="OffTrail home">
+                <span className="gf-bloom-logo-icon glow-purple"><Gem size={24} strokeWidth={1.8} /></span>
+                <span>OffTrail</span>
+              </button>
+              <button className="gf-bloom-menu liquid-glass" type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+                <Menu size={19} />
+                <span>Menu</span>
+              </button>
+            </nav>
+
+            <div className="gf-bloom-hero">
+              <div className="gf-bloom-orb glow-purple" aria-hidden="true">
+                <Gem size={50} strokeWidth={1.45} />
+              </div>
+              <h1>
+                Discover every<br />
+                <span className="gf-serif">hidden gem</span> on your<br />
+                path
+              </h1>
+              <p>
+                AI-powered route exploration that reveals the places Google Maps won't show you.
+              </p>
+              <button className="gf-bloom-cta liquid-glass-strong" type="button" onClick={() => openPlanner()}>
+                <span>Plan My Route</span>
+                <span className="gf-bloom-cta-icon"><Route size={16} /></span>
+              </button>
+              <div className="gf-bloom-pill-row" aria-label="Discovery filters">
+                <button className="gf-bloom-pill liquid-glass" type="button" onClick={() => openPlanner(["hidden"])}>
+                  <Gem size={13} />
+                  Hidden Spots
+                </button>
+                <button className="gf-bloom-pill liquid-glass" type="button" onClick={() => openPlanner(["photo-op"])}>
+                  <Camera size={13} />
+                  Photo Locations
+                </button>
+                <button className="gf-bloom-pill liquid-glass" type="button" onClick={() => openPlanner(["local"])}>
+                  <Compass size={13} />
+                  Local Favorites
+                </button>
+              </div>
+            </div>
+
+            <div className="gf-bloom-quote" aria-label="OffTrail quote">
+              <p>ENDLESS DISCOVERY</p>
+              <blockquote>
+                "Not all who wander are lost, <span className="gf-serif">some just know where to look</span>."
+              </blockquote>
+              <div>
+                <span />
+                <small>THE WANDERERS</small>
+                <span />
+              </div>
+            </div>
           </div>
         </div>
+
+        <aside className="gf-bloom-right" aria-label="OffTrail feature controls">
+          <div className="gf-bloom-topbar">
+            <div className="gf-bloom-social liquid-glass" aria-label="Social links">
+              <a href="https://twitter.com/gemfinder" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                <Twitter size={16} />
+              </a>
+              <a href="https://linkedin.com/company/gemfinder" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                <Linkedin size={16} />
+              </a>
+              <a href="https://instagram.com/whokrtk" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <Instagram size={16} />
+              </a>
+              <ArrowRight size={16} className="gf-bloom-social-arrow" />
+            </div>
+            <div className="account-wrap">
+              <button
+                className="gf-bloom-account liquid-glass"
+                type="button"
+                onClick={() => (auth.isAuthenticated ? setAccountOpen(!accountOpen) : setModal("auth"))}
+              >
+                <Compass size={16} />
+                <span>Account</span>
+              </button>
+              {accountOpen && <AccountDropdown />}
+            </div>
+          </div>
+
+          <div className="gf-bloom-community liquid-glass">
+            <h3>Join explorers worldwide</h3>
+            <p>Share your hidden finds with fellow travelers</p>
+          </div>
+
+          <div className="gf-bloom-dock liquid-glass">
+            <div className="gf-bloom-card-grid">
+              <button className="gf-bloom-mini-card liquid-glass" type="button" onClick={() => openPlanner()}>
+                <span className="gf-bloom-mini-icon glow-cyan">
+                  <Navigation size={20} />
+                </span>
+                <strong>AI Route Planning</strong>
+                <small>Smart algorithms find every POI</small>
+              </button>
+              <button className="gf-bloom-mini-card liquid-glass" type="button" onClick={openArchive}>
+                <span className="gf-bloom-mini-icon purple glow-purple">
+                  <MapIcon size={20} />
+                </span>
+                <strong>Discovery Archive</strong>
+                <small>Save favorite hidden spots</small>
+              </button>
+            </div>
+
+            <button className="gf-bloom-intelligence-card liquid-glass" type="button" onClick={() => setModal("exploreAround")}>
+              <span className="gf-bloom-thumb">
+                <img src={thumbnailUrl} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+              </span>
+              <span className="gf-bloom-intelligence-copy">
+                <strong>Real-time Location Intelligence</strong>
+                <small>Photos, ratings, insider tips for every stop</small>
+              </span>
+              <span className="gf-bloom-arrow">
+                <ArrowRight size={16} />
+              </span>
+            </button>
+          </div>
+        </aside>
       </section>
     </AppShell>
   );
@@ -655,6 +702,7 @@ function LandingPage() {
 function AppShell({ active = "explore", className = "", children }) {
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const frameRef = useRef(null);
+  const showShellNav = !className.includes("landing-page");
 
   function handlePointerMove(event) {
     if (frameRef.current) return;
@@ -676,7 +724,7 @@ function AppShell({ active = "explore", className = "", children }) {
       style={{ "--gf-parallax-x": `${parallax.x}px`, "--gf-parallax-y": `${parallax.y}px` }}
     >
       <WildernessBackdrop />
-      <WildernessNavbar active={active} />
+      {showShellNav && <WildernessNavbar active={active} />}
       <main className="gf-main">{children}</main>
     </section>
   );
@@ -685,7 +733,8 @@ function AppShell({ active = "explore", className = "", children }) {
 function WildernessBackdrop() {
   return (
     <div className="gf-background" aria-hidden="true">
-      <img src={wildernessHeroUrl} alt="" />
+      <img className="gf-background-fallback" src={wildernessHeroUrl} alt="" />
+      <video className="gf-background-video" id="hero-video" src={videoUrl} autoPlay loop muted playsInline poster={wildernessHeroUrl} />
       <div className="gf-background-shade" />
     </div>
   );
