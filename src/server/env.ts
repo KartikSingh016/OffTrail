@@ -9,7 +9,8 @@ export const serverEnv = {
   anthropicModel: process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-latest",
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "",
-  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+  allowEstimatedRoutes: process.env.OFFTRAIL_ALLOW_ESTIMATED_ROUTES === "true"
 };
 
 export function hasSupabaseConfig() {

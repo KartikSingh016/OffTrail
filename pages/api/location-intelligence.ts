@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { searchFoursquarePlaces } from "../../src/server/foursquare";
 import { searchGooglePlaces } from "../../src/server/google";
 import { haversineMeters } from "../../src/server/geo";
+import { osmStaticMapUrl, searchNominatimAround, searchOsmPlaces } from "../../src/server/osm";
 import type { LatLng, PlaceCandidate } from "../../src/server/types";
 
 type LocationIntelligenceRequest = {
@@ -27,57 +28,8 @@ type IntelligenceLocation = {
 type LocationIntelligenceResponse = {
   locations: IntelligenceLocation[];
   userLocation: LatLng;
+  message?: string;
 };
-
-const DEMO_PHOTOS = [
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDO14rPiGqat7AjcxGLybdovNh4qdz6eCt9z3UUzODXNeu7QQ3vn4LSpNmVffTX6VQsyUnUeL_7DWvtFrP-AqnAnPGsWIEzBMedhz84LAIpqhd-QWO_YnOm1iv9RtHIo8bzT2bIfjk28R6MVD4JtR0Ui6ZmA8BsmK7Z-_pAlsv_o649fLeVJB35aN_83j8X1ipxln__NHYnzwAQhvGDLmE-N5MqYkiIduHyuUPxc_YT6Mg2vwJ1Sq6eubjDpeocNo1oSbi9KRgbC3M",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuD5jwyfJYwM7McWKEBMMvPpEXhOobxdgCp9DSYexx62nPHSlvoIe8a1-MWNfOHMX4i0ec-vCsT3CRX0dQPmCuAsdluNcMVfqPtzZ9tXS7lzBS4OKVMLuXtnqprzjrD7INtcz2jKBbLQIIu57OKOldUgY1KQzP0s21SN0nN4XLnzdp8XPdpDV35mMp_Kc4sZBBr8luUiBaWaM7Q6a31yXFYAVna64E3o5WJUj2IrCNzR5AwS1Ic-PZILuzvAaSkrWCxXVZlor6BcKkE",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAnvabVXfklf31kqDB4ZSiWbWwKjsmk34TohXv_RQHr3oSeYxF0ANZaZ0y9zkraizeHjzYJEtQRZO24Kf8v9lgQeHDqt_kO6AXvGnkiaBcD9U2suXvikUdIHprS9UiCEYUSpbSHfqQKNloHpBRWP92P1yFHbjjsHzCGs_QQVUqVEwcJaHFrOV55lbFAK7OZkwSGp_aqg4V3xHhB87cGauLNAP-D1QgSu774GXuyhK1Q3DJQ6_z2s5i2DJQeWtJUN0kT_vmI1DY20NA",
-  "https://images.pexels.com/photos/2662116/pexels-photo-2662116.jpeg?auto=compress&cs=tinysrgb&w=640"
-];
-
-const DEMO_LOCATIONS = [
-  {
-    id: "loc_1",
-    name: "Obsidian Gorge",
-    type: "hidden_gem" as const,
-    offset: { lat: 0.0108, lng: -0.0176 },
-    distance: 1200,
-    description: "Rare geological formation with deep teal water veins.",
-    rating: 4.8,
-    category: "nature"
-  },
-  {
-    id: "loc_2",
-    name: "Twilight Crest",
-    type: "photo_op" as const,
-    offset: { lat: -0.0162, lng: 0.0282 },
-    distance: 2800,
-    description: "Perfect elevation for celestial long-exposure shots.",
-    rating: 4.9,
-    category: "viewpoint"
-  },
-  {
-    id: "loc_3",
-    name: "Moss Lantern Path",
-    type: "nature" as const,
-    offset: { lat: 0.0201, lng: 0.0123 },
-    distance: 1900,
-    description: "Quiet green trail with soft light and almost no crowds.",
-    rating: 4.7,
-    category: "nature"
-  },
-  {
-    id: "loc_4",
-    name: "Glasswater Overlook",
-    type: "viewpoint" as const,
-    offset: { lat: -0.0095, lng: -0.0262 },
-    distance: 2400,
-    description: "Wind-cut overlook with a wide cinematic view.",
-    rating: 4.6,
-    category: "viewpoint"
-  }
-];
 
 export default async function handler(
   req: NextApiRequest,
@@ -104,7 +56,7 @@ export default async function handler(
 
   try {
     const [google, foursquare] = await Promise.allSettled([
-      searchGooglePlaces(userLocation, radiusKm),
+      searchGooglePlaces(userLocation, radiusKm, Array.from(categories)),
       searchFoursquarePlaces(userLocation, radiusKm)
     ]);
 
@@ -112,54 +64,53 @@ export default async function handler(
       ...(google.status === "fulfilled" ? google.value : []),
       ...(foursquare.status === "fulfilled" ? foursquare.value : [])
     ];
+    const realPlaces = providerPlaces.length
+      ? providerPlaces
+      : await searchNearbyOpenData(userLocation, radiusKm, Array.from(categories));
 
-    const mapped = providerPlaces.map((place) => mapProviderPlace(place, userLocation));
-    const filtered = mapped.filter((location) => !categories.size || categories.has(location.type) || categories.has(location.category));
-    const locations = (filtered.length ? filtered : demoLocations(userLocation))
+    const filteredPlaces = realPlaces.filter((place) => matchesRequestedCategory(place, categories));
+    const locations = filteredPlaces
+      .map((place) => mapProviderPlace(place, userLocation))
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 10);
 
-    return res.status(200).json({ locations, userLocation });
+    return res.status(200).json({
+      locations,
+      userLocation,
+      message: locations.length
+        ? undefined
+        : "No verified nearby places were returned by the configured providers. Try a wider radius or another category."
+    });
   } catch {
     return res.status(200).json({
-      locations: demoLocations(userLocation).slice(0, 10),
-      userLocation
+      locations: [],
+      userLocation,
+      message: "Nearby providers are temporarily unavailable. OffTrail did not create synthetic places."
     });
   }
 }
 
+async function searchNearbyOpenData(userLocation: LatLng, radiusKm: number, categories: string[]) {
+  const osm = await searchOsmPlaces(userLocation, radiusKm, categories);
+  if (osm.length) return osm;
+  return searchNominatimAround(userLocation, radiusKm, categories);
+}
+
 function mapProviderPlace(place: PlaceCandidate, userLocation: LatLng): IntelligenceLocation {
   const distance = Math.round(haversineMeters(userLocation, place));
+  const point = { lat: place.lat, lng: place.lng };
   return {
     id: place.id,
     name: place.name,
     type: typeFromCategory(place.category, place.isHiddenGem),
-    coordinates: { lat: place.lat, lng: place.lng },
+    coordinates: point,
     distance,
     description: place.description,
-    photo: place.photos[0] || DEMO_PHOTOS[distance % DEMO_PHOTOS.length],
-    rating: place.rating || 4.4,
-    isOpen: place.isOpenAtArrival ?? true,
+    photo: firstRealPhoto(place.photos) || osmStaticMapUrl(point),
+    rating: place.rating || 0,
+    isOpen: place.isOpenAtArrival ?? ["nature", "viewpoint", "photo-op"].includes(place.category),
     category: place.category
   };
-}
-
-function demoLocations(userLocation: LatLng): IntelligenceLocation[] {
-  return DEMO_LOCATIONS.map((location, index) => ({
-    id: location.id,
-    name: location.name,
-    type: location.type,
-    coordinates: {
-      lat: Number((userLocation.lat + location.offset.lat).toFixed(6)),
-      lng: Number((userLocation.lng + location.offset.lng).toFixed(6))
-    },
-    distance: location.distance,
-    description: location.description,
-    photo: DEMO_PHOTOS[index % DEMO_PHOTOS.length],
-    rating: location.rating,
-    isOpen: true,
-    category: location.category
-  }));
 }
 
 function typeFromCategory(category: string, hiddenGem: boolean): IntelligenceLocation["type"] {
@@ -167,4 +118,17 @@ function typeFromCategory(category: string, hiddenGem: boolean): IntelligenceLoc
   if (category === "photo-op") return "photo_op";
   if (category === "viewpoint") return "viewpoint";
   return "nature";
+}
+
+function matchesRequestedCategory(place: PlaceCandidate, categories: Set<string>) {
+  if (!categories.size) return true;
+  if (place.category === "culture" && !categories.has("culture")) return false;
+  if (place.category === "food" && !categories.has("food") && !categories.has("local")) return false;
+  if (place.category === "cafe" && !categories.has("cafe") && !categories.has("food") && !categories.has("local")) return false;
+  const type = typeFromCategory(place.category, place.isHiddenGem);
+  return categories.has(type) || categories.has(place.category);
+}
+
+function firstRealPhoto(photos: string[]) {
+  return photos.find((photo) => /^https?:\/\//i.test(photo));
 }

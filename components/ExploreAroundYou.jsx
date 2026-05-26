@@ -4,7 +4,7 @@ import { ArrowLeft, Camera, Compass, Gem, Loader2, MapPin, Navigation, Star } fr
 const MAP_BACKGROUND =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBVVfXTx2UjZoOxJMZ_5ZkNzIULqzAq5a1NoLZo5CFDPeBpqbbYlpoLhK6Cc3p9mSLCbFyA_b7xucpNZRsXMIuJiovOeHaHgMRGAPWM86G8eRQ0y-HXyDXyDGZQ-4j7EMDBo7P4uDOg4aa1rtj_riFt8dxhGJ_cCOYr7wMzK0jdal9XJj_ACUPeCSYf5RL5ftjt9ygyDiBvOUJMloj9yEyreDFSvaLBr_Jc-c-ti1Z2pIX3jnvGwLUniNM5bwkz6SgyhN2liW4BaHE";
 
-const DEMO_COORDINATES = { lat: 64.134, lng: -21.467 };
+const EMPTY_COORDINATES = { lat: 0, lng: 0 };
 
 const PIN_POSITIONS = [
   { x: 31, y: 39 },
@@ -19,48 +19,6 @@ const PIN_POSITIONS = [
   { x: 52, y: 79 }
 ];
 
-const DEMO_LOCATIONS = [
-  {
-    id: "demo-obsidian-gorge",
-    name: "Obsidian Gorge",
-    type: "hidden_gem",
-    coordinates: { lat: 64.1448, lng: -21.4846 },
-    distance: 1200,
-    description: "Rare geological formation with deep teal water veins.",
-    photo:
-      "https://images.pexels.com/photos/2662116/pexels-photo-2662116.jpeg?auto=compress&cs=tinysrgb&w=640",
-    rating: 4.8,
-    isOpen: true,
-    category: "nature"
-  },
-  {
-    id: "demo-twilight-crest",
-    name: "Twilight Crest",
-    type: "photo_op",
-    coordinates: { lat: 64.1178, lng: -21.4388 },
-    distance: 2800,
-    description: "Perfect elevation for celestial long-exposure shots.",
-    photo:
-      "https://images.pexels.com/photos/2516409/pexels-photo-2516409.jpeg?auto=compress&cs=tinysrgb&w=640",
-    rating: 4.9,
-    isOpen: true,
-    category: "viewpoint"
-  },
-  {
-    id: "demo-moss-lantern-path",
-    name: "Moss Lantern Path",
-    type: "nature",
-    coordinates: { lat: 64.1541, lng: -21.4547 },
-    distance: 1900,
-    description: "Quiet green trail with soft light and almost no crowds.",
-    photo:
-      "https://images.pexels.com/photos/2901209/pexels-photo-2901209.jpeg?auto=compress&cs=tinysrgb&w=640",
-    rating: 4.7,
-    isOpen: true,
-    category: "nature"
-  }
-];
-
 const STAGES = {
   idle: 0,
   radar: 1,
@@ -71,8 +29,8 @@ const STAGES = {
 
 export default function ExploreAroundYou({ onClose, notify }) {
   const [stage, setStage] = useState("idle");
-  const [locations, setLocations] = useState(DEMO_LOCATIONS);
-  const [userLocation, setUserLocation] = useState(DEMO_COORDINATES);
+  const [locations, setLocations] = useState([]);
+  const [userLocation, setUserLocation] = useState(EMPTY_COORDINATES);
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Getting your location...");
@@ -118,15 +76,15 @@ export default function ExploreAroundYou({ onClose, notify }) {
         const data = await response.json();
         if (cancelled) return;
 
-        const nextLocations = Array.isArray(data.locations) && data.locations.length ? data.locations : DEMO_LOCATIONS;
-        setLocations(nextLocations.slice(0, 10).map(normalizeLocation));
+        const nextLocations = Array.isArray(data.locations) ? data.locations : [];
+        setLocations(nextLocations.slice(0, 10).map(normalizeLocation).filter(Boolean));
         if (data.userLocation) setUserLocation(data.userLocation);
-        setStatus("Nearby discoveries ready");
+        setStatus(nextLocations.length ? "Nearby discoveries ready" : data.message || "No real nearby places found");
       } catch (error) {
         if (cancelled) return;
-        setLocations(DEMO_LOCATIONS);
-        setStatus("Showing demo discoveries");
-        notify?.("Using demo nearby gems while live location data is unavailable.", "info");
+        setLocations([]);
+        setStatus("Location permission is required to run a real nearby scan.");
+        notify?.("Location permission is required. Open Nearby and enter a city if you prefer.", "error");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -232,7 +190,7 @@ export default function ExploreAroundYou({ onClose, notify }) {
           ))}
       </svg>
 
-      <div className="rtli-user-location" aria-label={`Your location ${userLocation.lat}, ${userLocation.lng}`}>
+      <div className="rtli-user-location" aria-label={userLocation.lat || userLocation.lng ? `Your location ${userLocation.lat}, ${userLocation.lng}` : "Waiting for your location"}>
         <div className="rtli-user-stack">
           {stageValue >= STAGES.radar && <span className="rtli-radar-wave" />}
           <span className="rtli-user-pulse" />
@@ -277,6 +235,9 @@ export default function ExploreAroundYou({ onClose, notify }) {
           {loading && <Loader2 className="rtli-loader" size={22} />}
         </div>
         <div className="rtli-location-cards">
+          {!loading && !pins.length && (
+            <p className="rtli-empty">No verified nearby places are shown until OffTrail has a real location and a successful scan.</p>
+          )}
           {pins.map((location) => (
             <button
               ref={(node) => {
@@ -291,7 +252,7 @@ export default function ExploreAroundYou({ onClose, notify }) {
               onBlur={() => setActiveId(null)}
               onClick={() => setActiveLocation(location.id)}
             >
-              <img src={location.photo} alt="" loading="lazy" />
+              <img src={location.photo} alt="" loading="lazy" onError={(event) => handleImageFallback(event, location)} />
               <span className={`rtli-card-icon rtli-card-icon-${location.type}`}>
                 <PinIcon type={location.type} />
               </span>
@@ -305,7 +266,7 @@ export default function ExploreAroundYou({ onClose, notify }) {
                   <MapPin size={14} />
                   {formatDistance(location.distance)}
                   <Star size={14} />
-                  {Number(location.rating || 4.7).toFixed(1)}
+                  {Number(location.rating || 0) > 0 ? Number(location.rating).toFixed(1) : "Unrated"}
                   <span className={location.isOpen ? "is-open" : "is-closed"}>
                     {location.isOpen ? "Open now" : "Closed"}
                   </span>
@@ -321,36 +282,72 @@ export default function ExploreAroundYou({ onClose, notify }) {
 
 function getUserCoordinates() {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
-    return Promise.resolve(DEMO_COORDINATES);
+    return Promise.reject(new Error("Location access is unavailable."));
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (position) =>
         resolve({
           lat: Number(position.coords.latitude.toFixed(6)),
           lng: Number(position.coords.longitude.toFixed(6))
         }),
-      () => resolve(DEMO_COORDINATES),
+      () => reject(new Error("Location permission denied.")),
       { enableHighAccuracy: false, maximumAge: 60000, timeout: 1800 }
     );
   });
 }
 
-function normalizeLocation(location, index) {
-  const demo = DEMO_LOCATIONS[index % DEMO_LOCATIONS.length];
+function normalizeLocation(location) {
+  const coordinates = location.coordinates || { lat: location.lat, lng: location.lng };
+  if (!location.id || !location.name || !Number.isFinite(coordinates?.lat) || !Number.isFinite(coordinates?.lng)) {
+    return null;
+  }
+  const distance = Number(location.distance || 0);
+  const photo = firstRealPhoto([location.photo, ...(location.photos || [])]) || osmMapPreview(coordinates);
   return {
-    id: location.id || demo.id,
-    name: location.name || demo.name,
-    type: location.type || demo.type,
-    coordinates: location.coordinates || demo.coordinates,
-    distance: Number(location.distance || demo.distance),
-    description: location.description || demo.description,
-    photo: location.photo || demo.photo,
-    rating: Number(location.rating || demo.rating),
-    isOpen: location.isOpen ?? true,
-    category: location.category || demo.category
+    id: location.id,
+    name: location.name,
+    type: location.type || (location.category === "photo-op" ? "photo_op" : "nature"),
+    coordinates,
+    distance,
+    description: location.description || "Verified map result near this scan area.",
+    photo,
+    rating: Number(location.rating || 0),
+    isOpen: Boolean(location.isOpen),
+    category: location.category || "nearby"
   };
+}
+
+function firstRealPhoto(photos) {
+  return photos.find((photo) => typeof photo === "string" && /^https?:\/\//i.test(photo));
+}
+
+function osmMapPreview(point) {
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${point.lat},${point.lng}&zoom=15&size=640x360&markers=${point.lat},${point.lng},red-pushpin`;
+}
+
+function handleImageFallback(event, location) {
+  const img = event.currentTarget;
+  if (!img.dataset.fallbackStage) {
+    img.dataset.fallbackStage = "map";
+    img.src = osmMapPreview(location.coordinates);
+    return;
+  }
+  img.src = placeholderImage(location.name || "Nearby place");
+}
+
+function placeholderImage(title) {
+  const safeTitle = String(title).slice(0, 42).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+      <rect width="640" height="360" fill="#0d0e0e"/>
+      <circle cx="432" cy="132" r="120" fill="#7cd5d5" opacity="0.16"/>
+      <path d="M0 260 C120 210 210 235 320 178 S505 92 640 124" stroke="#b4cbc6" stroke-width="4" fill="none"/>
+      <text x="44" y="260" fill="#e3e2e1" font-family="Hanken Grotesk, Arial, sans-serif" font-size="24" font-weight="700">${safeTitle}</text>
+      <text x="44" y="294" fill="#c2c8c5" font-family="Hanken Grotesk, Arial, sans-serif" font-size="13" letter-spacing="3">NO PROVIDER PHOTO</text>
+    </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
 function linePath(position) {

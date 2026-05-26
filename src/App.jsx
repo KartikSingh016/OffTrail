@@ -41,8 +41,9 @@ import ExploreAroundYou from "../components/ExploreAroundYou.jsx";
 const videoUrl =
   "https://cdn.pixabay.com/video/2024/03/25/205589-927335742_large.mp4";
 
-const thumbnailUrl =
-  "https://images.pexels.com/photos/36807312/pexels-photo-36807312.jpeg?auto=compress&cs=tinysrgb&w=192&h=128&fit=crop";
+const thumbnailUrl = offTrailPlaceholderImage("Verified map source", "No provider photo available");
+
+const publicGoogleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 const intelligenceMapUrl =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBVVfXTx2UjZoOxJMZ_5ZkNzIULqzAq5a1NoLZo5CFDPeBpqbbYlpoLhK6Cc3p9mSLCbFyA_b7xucpNZRsXMIuJiovOeHaHgMRGAPWM86G8eRQ0y-HXyDXyDGZQ-4j7EMDBo7P4uDOg4aa1rtj_riFt8dxhGJ_cCOYr7wMzK0jdal9XJj_ACUPeCSYf5RL5ftjt9ygyDiBvOUJMloj9yEyreDFSvaLBr_Jc-c-ti1Z2pIX3jnvGwLUniNM5bwkz6SgyhN2liW4BaHE";
@@ -52,6 +53,24 @@ const intelligencePreviewUrl =
 
 const wildernessHeroUrl =
   "https://lh3.googleusercontent.com/aida/ADBb0ugqoUNpQugzJpma1M2DK6oAFeZJN8oXmgpwmxg2r4FYLHMhsl_9gK0suuJRMrrAgL1gwAT_YQjYbQOlFttZPUNTdETDP5FCEN2vzf1RgrKkoGX4N6bWaSIxOF7QUf-_a2Gtd1_GbQAygcymqSyhytT7e2X59c-uUyhJnGu2SxgVjFcPye-iuVY7dbkk0qb1Hzd2_Ty_Q-fqI77XOspUcJI0Yxk68NAihbrV-DuWClOJC_sGm9OwUhkihQ";
+
+const stitchHeroUrl =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuBYAvaL9aHimS4v3D5mgp7I2o58_R1k5qm25_kJM3f931bQb11TCiZXECepOZ7JlNK0EnzHM2gldTLmo11SzFN-Uvyn7GEpUFynfgER2zBmW6nYoYNy6mmPr1vZEjv-UdH6M6EsrKS0Ytkqxvvn-M0dGLHoM1ecTVc24HhmyzNeYjDBZ5IVAOMMLUL6STbQMb0oIXNX4RnBhdMVITIHgkQAyB1P0EXkHC1_QJbeedexNaIh2zn8kKJa-6CiUc8DWqz_meogVD4MHO8";
+
+const stitchMapUrl =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAMq0oKZkbpvnmL4Nwr8Dwvqxhu8ykpQjpSbA8VzqBtWJ37vksu17cSAmEZIekSi47uYUAQ8J3FTpfyYwNbHVkoYthTaojRcaEdYh0eHdhfc3KokXdTSRuzUxDR-2jXdzfOEQ897UNaTLwbdon46lzXxhcYlc8En-CqPNFxHWuZA6V73-CI6VboTFKXi1sh8GO_1idTr3S-SbCp6d24bnn8TJK2NKUYhp5ETak5WJMcelIGFolPJpDY93Z3QkxfyWvJC956K0uHkSI";
+
+const stitchCtaUrl =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuD5VGb1oxLbV6ENkoFuBazgW8D5iO1io8M-k7gTmpoG4bXfRQC9nTFdx8_Leqi7rzEoGEDs1Q_VzQJgEkI1Zy5wKEQ8u_UqXWLI7sHpI8ftNg9iq0TWHQFuN7-yesPodJPpU2XkdQS4rzQMs11a6cDuOGC0iKYCfrNgswZQhDcHrZartQIsmJMJiXpstiGSq-KIUJU28WS2HlALCtD67LKP3OqSFtQ5aLu-GVTTi4-dcvAnMsv45EV9Gze94NbFkFZaLbgZeG_ywcM";
+
+const unchartedCoordinatesUrl =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuBGYPy48GhBsiclrZJ_ViIGKxHryX_Ah2KoouXL2h_6Tg1MV8VFvCFUPI-XqJ84AXIBTIUCmFuB2T8wToLkYeM6sVRd1Zy4S7gEqgWwMiM1ZtILsuoD-VWTj20lr2gRVXEJpah45INSyA4j8huA9QnO5fnmzz4t2aZ49Iu346GLIaprqVIl5dz9I1d0SK-IaIDDxDVjt7I-ciWGgCQPjFdbBE6ymh-AEMoiAeER4Gjxcv2DMWj0rUzeD3c0wtsDnHCtU5xBsJkteMw";
+
+const silentPathUrl =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAW3M6nIRSP6Du9RXOoXZszsuUqR4lE1s4gibm5H_qgK2lDfaYi99XSY49YDUPWLNgAJ8P6K1ST-7BoL3EPvHhpZGfep4XwuxseQT6AFknlBsLqg5ygJ_BYCA_QF29ij_3KyyvfgMSyEiJOMm8wjzFSo8ez0nGweHiqNAsyzHpssc3mGLu5SRCOPEcEx0N3XeZAKLADqOK4fR7JagEdHkJxYTfH44bJW4WE5qC65DSJQJifp69c4SlyygdfZ9AP73doyNjlP3LBX8I";
+
+const signalInterruptedUrl =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAIm6DAr7g-Z_XGA5xcomizxVHnTsJlxtCFdhjT1uXtNfAbVcF50_sU_5WnmfG06RiijkX2z0DGXFha2BDK4ozmJDwxfxm88dZz6GbBy56p9wFxpUk2YpR4PPDHMr-obktuDQnSq_oQOf5KZ_l6FPZ5aimFqEkDBU9oiv9MtLckiqebbCanilW6ww67bnFjmUlNsaI9zj3rJ0fGG-_883g0QflBFeMwx22zvbQaonjY5sfqSXLWbolF7DvFCkDO0HZW9fwOlKtmcuk";
 
 const stationNightUrl =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCFSjuNaBBEFIXwofy21U_kouAWevXSRHNP-GLOsUTjoJD9KjKCoquNWu8h6AoHVgKAW-ICvWqdRGobYct55vEIyQVTQr4J9MyVkCTI13ZaHYkYUmf46qOs-eJvKhPJSEm_g3Ipzu2z8EqHR1IslCVfRZP1DVymJhxRiD_M9hi7hoGqfMafIAfGGwbeMX03UUO7X-CSwjpAO-ELh7cfO0VR_ssZnUtWRC0Nz8QEzpIm_hKru-0nZqMIl6APnYvkU95dtdDahxCOyeI";
@@ -63,161 +82,7 @@ const galleryPhotos = [
   "https://images.pexels.com/photos/2901209/pexels-photo-2901209.jpeg?auto=compress&cs=tinysrgb&w=640"
 ];
 
-const wildernessMockPlaces = [
-  {
-    id: "wild-emerald-hollow",
-    name: "Emerald Hollow",
-    category: "nature",
-    type: "hidden_gem",
-    rating: 4.9,
-    ratingCount: 42,
-    photo: galleryPhotos[0],
-    photos: [galleryPhotos[0]],
-    description: "Mossy forest pocket where fog gathers under old-growth cedar arches.",
-    detourDistance: "2.4 km",
-    distance: 2400,
-    estimatedTime: 35,
-    walkingTime: 18,
-    isHiddenGem: true,
-    isOpenAtArrival: true,
-    is24Hours: true,
-    todaysHours: "Open access trail",
-    bestTime: "Blue hour after sunrise",
-    safetyNote: "Marked trail, steady footing, best with a headlamp after dark.",
-    crowdLevel: "Quiet",
-    photoScore: 98,
-    tags: ["Quiet", "Misty", "Forest"],
-    safeForNighttime: true,
-    point: { x: 34, y: 58 }
-  },
-  {
-    id: "wild-misty-falls",
-    name: "Misty Falls",
-    category: "viewpoint",
-    type: "viewpoint",
-    rating: 4.8,
-    ratingCount: 87,
-    photo: galleryPhotos[1],
-    photos: [galleryPhotos[1]],
-    description: "A short detour to layered cascades with a clean overlook above the spray.",
-    detourDistance: "5.1 km",
-    distance: 5100,
-    estimatedTime: 45,
-    walkingTime: 31,
-    isHiddenGem: true,
-    isOpenAtArrival: true,
-    todaysHours: "Open 24 hours",
-    bestTime: "Late afternoon mist",
-    safetyNote: "Guardrail at the main lookout; avoid the lower stones when wet.",
-    crowdLevel: "Low",
-    photoScore: 95,
-    tags: ["Waterfall", "Photo spot", "Short hike"],
-    point: { x: 58, y: 38 }
-  },
-  {
-    id: "wild-obsidian-path",
-    name: "Obsidian Path",
-    category: "photo-op",
-    type: "photo_op",
-    rating: 4.7,
-    ratingCount: 63,
-    photo: galleryPhotos[2],
-    photos: [galleryPhotos[2]],
-    description: "Dark stone footpath with reflected light and a dramatic forest canopy.",
-    detourDistance: "3.8 km",
-    distance: 3800,
-    estimatedTime: 25,
-    walkingTime: 22,
-    isHiddenGem: false,
-    isOpenAtArrival: true,
-    todaysHours: "Open access",
-    bestTime: "After rain",
-    safetyNote: "Can be slippery; stay on the stone path.",
-    crowdLevel: "Moderate",
-    photoScore: 92,
-    tags: ["Textures", "Rain", "Moody"],
-    point: { x: 72, y: 64 }
-  },
-  {
-    id: "wild-orchard-court",
-    name: "Orchard Court",
-    category: "garden",
-    type: "hidden_gem",
-    rating: 4.6,
-    ratingCount: 29,
-    photo: galleryPhotos[3],
-    photos: [galleryPhotos[3]],
-    description: "Tucked-away walled garden beside a quiet lane and old stone steps.",
-    detourDistance: "1.6 km",
-    distance: 1600,
-    estimatedTime: 20,
-    walkingTime: 12,
-    isHiddenGem: true,
-    isOpenAtArrival: false,
-    nextOpenTime: "08:00",
-    todaysHours: "08:00 - 20:00",
-    bestTime: "Morning shade",
-    safetyNote: "Residential area, well lit near the entrance.",
-    crowdLevel: "Very quiet",
-    photoScore: 88,
-    tags: ["Garden", "Local", "Calm"],
-    point: { x: 45, y: 28 }
-  }
-];
-
-const layoverSuggestions = [
-  {
-    id: "layover-night-cafe",
-    name: "Eiswerk Nightly",
-    category: "cafe",
-    photo: stationNightUrl,
-    photos: [stationNightUrl],
-    description: "Warm 24-hour counter inside the station perimeter with breakfast and charging seats.",
-    rating: 4.5,
-    ratingCount: 118,
-    distanceFromStationLabel: "450 m",
-    detourDistance: "450 m",
-    walkingTime: 6,
-    estimatedTime: 35,
-    isOpenAtArrival: true,
-    is24Hours: true,
-    todaysHours: "24 hours",
-    safeForNighttime: true,
-    fitsInLayover: true,
-    layoverWindow: "03:00 - 07:00",
-    layoverName: "Nuremberg Hbf",
-    bestTime: "03:30 for quiet seating",
-    safetyNote: "Inside a staffed transit zone with cameras and late-night foot traffic.",
-    crowdLevel: "Low",
-    photoScore: 74,
-    tags: ["24h", "Safe zone", "Coffee"]
-  },
-  {
-    id: "layover-opera-deck",
-    name: "Opera Deck",
-    category: "viewpoint",
-    photo: galleryPhotos[1],
-    photos: [galleryPhotos[1]],
-    description: "A compact, well-lit urban view deck for dawn photos within easy walking range.",
-    rating: 4.4,
-    ratingCount: 51,
-    distanceFromStationLabel: "900 m",
-    detourDistance: "900 m",
-    walkingTime: 12,
-    estimatedTime: 25,
-    isOpenAtArrival: true,
-    todaysHours: "Open access",
-    safeForNighttime: true,
-    fitsInLayover: true,
-    layoverWindow: "03:00 - 07:00",
-    layoverName: "Nuremberg Hbf",
-    bestTime: "Blue hour",
-    safetyNote: "Stay on the main boulevard and return before the 06:30 commuter rush.",
-    crowdLevel: "Quiet",
-    photoScore: 86,
-    tags: ["Night view", "Walkable", "Open"]
-  }
-];
+const wildernessMockPlaces = [];
 
 const preferenceOptions = [
   { key: "nature", label: "Nature Spots" },
@@ -282,19 +147,19 @@ function useOffTrail() {
   return useContext(AppContext);
 }
 
-function App() {
+function App({ initialView = null, initialContentPage = null, initialModal = null, initialMenuOpen = false }) {
   return (
-    <OffTrailProvider>
+    <OffTrailProvider initialView={initialView} initialContentPage={initialContentPage} initialModal={initialModal} initialMenuOpen={initialMenuOpen}>
       <OffTrailApp />
     </OffTrailProvider>
   );
 }
 
-function OffTrailProvider({ children }) {
-  const [view, setView] = useState("home");
-  const [contentPage, setContentPage] = useState("how");
-  const [modal, setModal] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+function OffTrailProvider({ children, initialView = null, initialContentPage = null, initialModal = null, initialMenuOpen = false }) {
+  const [view, setView] = useState(initialContentPage ? "content" : initialView || "home");
+  const [contentPage, setContentPage] = useState(initialContentPage || "how");
+  const [modal, setModal] = useState(initialModal);
+  const [menuOpen, setMenuOpen] = useState(Boolean(initialMenuOpen));
   const [accountOpen, setAccountOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [navigationStack, setNavigationStack] = useState([]);
@@ -331,6 +196,8 @@ function OffTrailProvider({ children }) {
     if (urlState.contentPage) {
       setContentPage(urlState.contentPage);
       setView("content");
+    } else if (urlState.view) {
+      setView(urlState.view);
     }
   }, []);
 
@@ -458,7 +325,7 @@ function OffTrailProvider({ children }) {
   }
 
   function signIn(user) {
-    const nextUser = { ...user, token: user.token || `demo-token-${Date.now()}` };
+    const nextUser = { ...user, token: user.token || `local-session-${Date.now()}` };
     setAuth({ user: nextUser, isAuthenticated: true });
     writeStorage("offtrail-auth", { user: nextUser });
     dismissOverlay();
@@ -505,7 +372,7 @@ function OffTrailProvider({ children }) {
 
 function OffTrailApp() {
   const { view, modal, toast, closeOverlay, notify } = useOffTrail();
-  const usesFoundationShell = view === "home" || view === "routeDiscovery" || view === "nearby";
+  const usesFoundationShell = view === "home" || view === "routeDiscovery" || view === "nearby" || view === "error";
 
   return (
     <main className={`app-shell ${usesFoundationShell ? "uses-foundation-shell" : ""}`}>
@@ -516,26 +383,9 @@ function OffTrailApp() {
         </>
       )}
       {view === "home" && <LandingPage />}
-      {view === "routeDiscovery" && (
-        <FoundationPage
-          active="routes"
-          eyebrow="Routes"
-          title="Plan a route with hidden stops"
-          description="Build a journey with scenic detours, local favorites, photo spots, and time-aware stops along the way."
-          action="Plan My Route"
-          onAction="planner"
-        />
-      )}
-      {view === "nearby" && (
-        <FoundationPage
-          active="nearby"
-          eyebrow="Nearby"
-          title="Explore hidden gems nearby"
-          description="Open the radar view to scan your surroundings for hidden gems, viewpoints, nature spots, and photo locations."
-          action="Explore Around You"
-          onAction="exploreAround"
-        />
-      )}
+      {view === "routeDiscovery" && <JourneyRouteDiscoveryPage />}
+      {view === "nearby" && <ExploreAroundYouPage />}
+      {view === "error" && <DiscoveryErrorPage />}
       {view === "results" && <ResultsPage />}
       {view === "itinerary" && <ItineraryPage />}
       {view === "content" && <ContentPage />}
@@ -568,134 +418,135 @@ function LandingPage() {
   };
 
   return (
-    <AppShell active="explore" className="landing-page">
-      <section className="gf-bloom-layout" aria-label="OffTrail route discovery landing">
-        <div className="gf-bloom-left">
-          <div className="gf-bloom-left-glass liquid-glass-strong" aria-hidden="true" />
-          <div className="gf-bloom-content">
-            <nav className="gf-bloom-panel-nav" aria-label="Landing navigation">
-              <button className="gf-bloom-logo" type="button" onClick={() => setView("home")} aria-label="OffTrail home">
-                <span className="gf-bloom-logo-icon glow-purple"><Gem size={24} strokeWidth={1.8} /></span>
-                <span>OffTrail</span>
-              </button>
-              <button className="gf-bloom-menu liquid-glass" type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu">
-                <Menu size={19} />
-                <span>Menu</span>
-              </button>
-            </nav>
-
-            <div className="gf-bloom-hero">
-              <div className="gf-bloom-orb glow-purple" aria-hidden="true">
-                <Gem size={50} strokeWidth={1.45} />
-              </div>
-              <h1>
-                Discover every<br />
-                <span className="gf-serif">hidden gem</span> on your<br />
-                path
-              </h1>
-              <p>
-                AI-powered route exploration that reveals the places Google Maps won't show you.
-              </p>
-              <button className="gf-bloom-cta liquid-glass-strong" type="button" onClick={() => openPlanner()}>
-                <span>Plan My Route</span>
-                <span className="gf-bloom-cta-icon"><Route size={16} /></span>
-              </button>
-              <div className="gf-bloom-pill-row" aria-label="Discovery filters">
-                <button className="gf-bloom-pill liquid-glass" type="button" onClick={() => openPlanner(["hidden"])}>
-                  <Gem size={13} />
-                  Hidden Spots
-                </button>
-                <button className="gf-bloom-pill liquid-glass" type="button" onClick={() => openPlanner(["photo-op"])}>
-                  <Camera size={13} />
-                  Photo Locations
-                </button>
-                <button className="gf-bloom-pill liquid-glass" type="button" onClick={() => openPlanner(["local"])}>
-                  <Compass size={13} />
-                  Local Favorites
-                </button>
-              </div>
-            </div>
-
-            <div className="gf-bloom-quote" aria-label="OffTrail quote">
-              <p>ENDLESS DISCOVERY</p>
-              <blockquote>
-                "Not all who wander are lost, <span className="gf-serif">some just know where to look</span>."
-              </blockquote>
-              <div>
-                <span />
-                <small>THE WANDERERS</small>
-                <span />
-              </div>
-            </div>
+    <section className="stitch-page" aria-label="OffTrail cinematic discovery">
+      <header className="stitch-topnav">
+        <button className="stitch-wordmark" type="button" onClick={() => setView("home")}>OffTrail</button>
+        <nav className="stitch-navlinks" aria-label="Primary navigation">
+          <button className="is-active" type="button" onClick={() => setView("home")}>Explore</button>
+          <button type="button" onClick={() => setView("routeDiscovery")}>Routes</button>
+          <button type="button" onClick={() => setView("nearby")}>Nearby</button>
+          <button type="button" onClick={() => setView("favorites")}>Saved Gems</button>
+        </nav>
+        <div className="stitch-nav-actions">
+          <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={21} /></button>
+          <div className="account-wrap">
+            <button type="button" onClick={() => (auth.isAuthenticated ? setAccountOpen(!accountOpen) : setModal("auth"))} aria-label="Account">
+              <User size={22} />
+            </button>
+            {accountOpen && <AccountDropdown />}
           </div>
         </div>
+      </header>
 
-        <aside className="gf-bloom-right" aria-label="OffTrail feature controls">
-          <div className="gf-bloom-topbar">
-            <div className="gf-bloom-social liquid-glass" aria-label="Social links">
-              <a href="https://twitter.com/gemfinder" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                <Twitter size={16} />
-              </a>
-              <a href="https://linkedin.com/company/gemfinder" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                <Linkedin size={16} />
-              </a>
-              <a href="https://instagram.com/whokrtk" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram size={16} />
-              </a>
-              <ArrowRight size={16} className="gf-bloom-social-arrow" />
-            </div>
-            <div className="account-wrap">
-              <button
-                className="gf-bloom-account liquid-glass"
-                type="button"
-                onClick={() => (auth.isAuthenticated ? setAccountOpen(!accountOpen) : setModal("auth"))}
-              >
-                <Compass size={16} />
-                <span>Account</span>
-              </button>
-              {accountOpen && <AccountDropdown />}
-            </div>
+      <main className="stitch-main">
+        <section className="stitch-hero">
+          <div className="stitch-hero-bg" aria-hidden="true">
+            <img src={stitchHeroUrl} alt="" onError={hideBrokenImage} />
+            <div />
           </div>
 
-          <div className="gf-bloom-community liquid-glass">
-            <h3>Join explorers worldwide</h3>
-            <p>Share your hidden finds with fellow travelers</p>
-          </div>
-
-          <div className="gf-bloom-dock liquid-glass">
-            <div className="gf-bloom-card-grid">
-              <button className="gf-bloom-mini-card liquid-glass" type="button" onClick={() => openPlanner()}>
-                <span className="gf-bloom-mini-icon glow-cyan">
-                  <Navigation size={20} />
-                </span>
-                <strong>AI Route Planning</strong>
-                <small>Smart algorithms find every POI</small>
-              </button>
-              <button className="gf-bloom-mini-card liquid-glass" type="button" onClick={openArchive}>
-                <span className="gf-bloom-mini-icon purple glow-purple">
-                  <MapIcon size={20} />
-                </span>
-                <strong>Discovery Archive</strong>
-                <small>Save favorite hidden spots</small>
-              </button>
+          <div className="stitch-hero-grid">
+            <div className="stitch-hero-copy">
+              <span className="stitch-eyebrow"><i /> INTELLIGENT EXPLORATION</span>
+              <h1>
+                Discover every <br />
+                <em>hidden gem</em> on your path
+              </h1>
+              <p>
+                The tactical route discovery engine for real places only. OffTrail surfaces verified stops,
+                live route intelligence, and nearby discoveries without inventing destinations.
+              </p>
+              <div className="stitch-hero-actions">
+                <button className="stitch-primary" type="button" onClick={() => openPlanner()}>
+                  START YOUR ADVENTURE <ArrowRight size={18} />
+                </button>
+                <button className="stitch-secondary stitch-glass" type="button" onClick={() => setModal("exploreAround")}>
+                  EXPLORE RADAR
+                </button>
+              </div>
+              <div className="stitch-stats">
+                <div>
+                  <small>ROUTING</small>
+                  <strong>Verified</strong>
+                  <span>NO SYNTHETIC ROUTES</span>
+                </div>
+                <div>
+                  <small>FAILURE MODE</small>
+                  <strong>Safe stop</strong>
+                  <span>WHEN PROVIDERS ARE MISSING</span>
+                </div>
+                <div>
+                  <small>DATA SOURCES</small>
+                  <strong>Live maps</strong>
+                  <span>GOOGLE / FOURSQUARE / OSM</span>
+                </div>
+              </div>
             </div>
 
-            <button className="gf-bloom-intelligence-card liquid-glass" type="button" onClick={() => setModal("exploreAround")}>
-              <span className="gf-bloom-thumb">
-                <img src={thumbnailUrl} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />
-              </span>
-              <span className="gf-bloom-intelligence-copy">
-                <strong>Real-time Location Intelligence</strong>
-                <small>Photos, ratings, insider tips for every stop</small>
-              </span>
-              <span className="gf-bloom-arrow">
-                <ArrowRight size={16} />
-              </span>
-            </button>
+            <div className="stitch-map-column">
+              <div className="stitch-map-ghost stitch-glass" aria-hidden="true" />
+              <div className="stitch-map-card stitch-glass">
+                <img src={stitchMapUrl} alt="" onError={hideBrokenImage} />
+                <svg viewBox="0 0 400 400" aria-hidden="true">
+                  <defs>
+                    <filter id="stitchGlow">
+                      <feGaussianBlur result="coloredBlur" stdDeviation="3" />
+                      <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <path className="stitch-route-light" d="M50,350 C150,300 100,200 300,150 S350,50 350,50" filter="url(#stitchGlow)" />
+                </svg>
+                <div className="stitch-floating-gem stitch-gem-a">
+                  <i />
+                  <span className="stitch-glass">Verified waypoint</span>
+                </div>
+                <div className="stitch-floating-gem stitch-gem-b">
+                  <i />
+                  <span className="stitch-glass">Live POI signal</span>
+                </div>
+                <div className="stitch-hud top-left">SCANNING_GEOMETRY...</div>
+                <div className="stitch-hud bottom-right">TRK: 322</div>
+                <div className="stitch-hud-dots"><span /><span /><span /></div>
+              </div>
+            </div>
           </div>
-        </aside>
-      </section>
-    </AppShell>
+        </section>
+
+        <section className="stitch-feature-grid" aria-label="OffTrail capabilities">
+          <button className="stitch-feature stitch-glass" type="button" onClick={() => setView("routeDiscovery")}>
+            <span><Route size={28} /></span>
+            <h3>Route Intelligence</h3>
+            <p>Analyze real route data and reject unsafe approximations when a route cannot be verified.</p>
+            <strong>EXPLORE ENGINE <ChevronDown size={15} /></strong>
+          </button>
+          <button className="stitch-feature stitch-glass" type="button" onClick={() => setModal("exploreAround")}>
+            <span><Navigation size={28} /></span>
+            <h3>Explore Around You</h3>
+            <p>Radar-style awareness of nearby parks, viewpoints, and local map-confirmed discoveries.</p>
+            <strong>PROXIMITY DATA <ChevronDown size={15} /></strong>
+          </button>
+          <button className="stitch-feature stitch-glass" type="button" onClick={() => setView("routeDiscovery")}>
+            <span><Clock size={28} /></span>
+            <h3>Layover Discovery</h3>
+            <p>Prioritize open, nearby, walkable places for odd-hour layovers and short stop windows.</p>
+            <strong>QUICK ESCAPES <ChevronDown size={15} /></strong>
+          </button>
+        </section>
+
+        <section className="stitch-cta stitch-glass">
+          <img src={stitchCtaUrl} alt="" onError={hideBrokenImage} />
+          <h2>Ready to leave the main road behind?</h2>
+          <p>Plan with verified routing, real place data, and graceful failure when the map cannot be trusted.</p>
+          <div>
+            <button className="stitch-primary" type="button" onClick={() => openPlanner()}>PLAN MY ROUTE</button>
+            <button className="stitch-secondary stitch-glass" type="button" onClick={openArchive}>OPEN ARCHIVE</button>
+          </div>
+        </section>
+      </main>
+    </section>
   );
 }
 
@@ -1029,7 +880,17 @@ function PlannerModal() {
         body: JSON.stringify(body)
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Route discovery failed.");
+      if (!response.ok) {
+        const message = result.error || "Route discovery failed.";
+        const discoveryError = classifyDiscoveryError(message);
+        const publicMessage = friendlyDiscoveryMessage(discoveryError, message);
+        setRouteState((state) => ({ ...state, results: null, selectedLocationIds: [], discoveryError }));
+        setError(publicMessage);
+        notify(publicMessage, "error", () => setModal("planner"));
+        dismissOverlay();
+        setView("error");
+        return;
+      }
 
       setRouteState({
         origin: originPlace,
@@ -1040,16 +901,32 @@ function PlannerModal() {
         departureTime,
         date: departureTime.slice(0, 10),
         results: result,
-        selectedLocationIds: result.locations.slice(0, 3).map((location) => location.id)
+        selectedLocationIds: result.locations.slice(0, 3).map((location) => location.id),
+        discoveryError: result.locations?.length
+          ? null
+          : {
+              type: "empty",
+              message: "No verified hidden places came back for this route. Try a wider radius or fewer filters."
+            }
       });
       dismissOverlay();
-      setView("results");
-      notify(`Found ${result.total} places along your route.`);
+      if (result.locations?.length) {
+        setView("results");
+        notify(`Found ${result.total} places along your route.`);
+      } else {
+        setView("error");
+        notify("No hidden places found for this route yet.", "info");
+      }
     } catch (error) {
-      console.error("Discovery error:", error);
+      console.warn("Discovery error:", error);
       const message = error instanceof Error ? error.message : "Failed to discover route.";
-      setError(message);
-      notify("Failed to load. Please try again.", "error", discoverRoute);
+      const discoveryError = classifyDiscoveryError(message);
+      const publicMessage = friendlyDiscoveryMessage(discoveryError, message);
+      setRouteState((state) => ({ ...state, results: null, selectedLocationIds: [], discoveryError }));
+      setError(publicMessage);
+      notify(publicMessage, "error", () => setModal("planner"));
+      dismissOverlay();
+      setView("error");
     } finally {
       setLoading(false);
     }
@@ -1211,26 +1088,26 @@ function JourneyRouteDiscoveryPage() {
   const [travelMode, setTravelMode] = useState("Train");
   const [radius, setRadius] = useState(routeState.radius || 5);
   const [preferences, setPreferences] = useState(new Set(routeState.preferences || ["nature", "viewpoint", "hidden", "photo-op"]));
-  const [layovers, setLayovers] = useState(routeState.layovers?.length ? routeState.layovers : [
-    {
-      id: "default-nuremberg",
-      label: "Nuremberg Hbf",
-      arrivalTime: "03:00",
-      departureTime: "07:00",
-      maxDistance: 2,
-      timeAvailable: 240
-    }
-  ]);
+  const [layovers, setLayovers] = useState(routeState.layovers?.length ? routeState.layovers : []);
   const [results, setResults] = useState(routeState.results);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [discoveryState, setDiscoveryState] = useState(routeState.discoveryError || null);
+  const [scanStage, setScanStage] = useState(routeState.results ? "complete" : "idle");
 
-  const visibleLocations = results?.locations?.length ? results.locations : wildernessMockPlaces;
+  const visibleLocations = results?.locations || [];
+  const layoverPlaces = useMemo(
+    () =>
+      visibleLocations
+        .filter((location) => location.layoverName || location.layoverWindow || location.distanceFromStationLabel || location.fitsInLayover)
+        .slice(0, 4),
+    [visibleLocations]
+  );
   const selected = new Set(routeState.selectedLocationIds || []);
 
   async function discoverRoute(event) {
-    event.preventDefault();
+    event?.preventDefault?.();
     setSubmitted(true);
     if (!origin.trim() || !destination.trim()) {
       notify("From and To locations are required.", "error");
@@ -1238,6 +1115,8 @@ function JourneyRouteDiscoveryPage() {
     }
 
     setLoading(true);
+    setDiscoveryState(null);
+    setScanStage("geocoding");
     try {
       const [originPlace, destinationPlace, layoverPlaces] = await Promise.all([
         geocode(origin),
@@ -1257,10 +1136,11 @@ function JourneyRouteDiscoveryPage() {
                 maxDistance: Number(layover.maxDistance || 2),
                 timeAvailable
               };
-            })
+          })
         )
       ]);
 
+      setScanStage("routing");
       const response = await fetch("/api/discover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1287,9 +1167,29 @@ function JourneyRouteDiscoveryPage() {
         })
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Route discovery failed.");
+      if (!response.ok) {
+        const message = result.error || "Route discovery failed.";
+        const discoveryError = classifyDiscoveryError(message);
+        const publicMessage = friendlyDiscoveryMessage(discoveryError, message);
+        setResults(null);
+        setDiscoveryState(discoveryError);
+        setScanStage("error");
+        setRouteState((state) => ({ ...state, results: null, selectedLocationIds: [], discoveryError }));
+        notify(publicMessage, "error", discoverRoute);
+        setView("error");
+        return;
+      }
 
+      setScanStage("places");
       setResults(result);
+      setDiscoveryState(
+        result.locations?.length
+          ? null
+          : {
+              type: "empty",
+              message: "No verified hidden places came back for this route. Try a wider radius or fewer filters."
+            }
+      );
       setRouteState({
         origin: originPlace,
         destination: destinationPlace,
@@ -1300,12 +1200,28 @@ function JourneyRouteDiscoveryPage() {
         travelMode,
         date: departureTime.slice(0, 10),
         results: result,
-        selectedLocationIds: result.locations.slice(0, 3).map((location) => location.id)
+        selectedLocationIds: result.locations.slice(0, 3).map((location) => location.id),
+        discoveryError: result.locations?.length
+          ? null
+          : {
+              type: "empty",
+              message: "No verified hidden places came back for this route. Try a wider radius or fewer filters."
+            }
       });
-      notify(`Found ${result.total} places along your route.`);
+      notify(result.locations?.length ? `Found ${result.total} places along your route.` : "No hidden places found for this route yet.", result.locations?.length ? "success" : "info");
+      setScanStage(result.locations?.length ? "complete" : "empty");
+      if (!result.locations?.length) setView("error");
     } catch (error) {
-      console.error("Journey discovery error:", error);
-      notify("Failed to load. Please try again.", "error", discoverRoute);
+      console.warn("Journey discovery error:", error);
+      const message = error instanceof Error ? error.message : "Failed to discover route.";
+      setResults(null);
+      const discoveryError = classifyDiscoveryError(message);
+      const publicMessage = friendlyDiscoveryMessage(discoveryError, message);
+      setRouteState((state) => ({ ...state, results: null, selectedLocationIds: [], discoveryError }));
+      setDiscoveryState(discoveryError);
+      setScanStage("error");
+      notify(publicMessage, "error", discoverRoute);
+      setView("error");
     } finally {
       setLoading(false);
     }
@@ -1320,85 +1236,292 @@ function JourneyRouteDiscoveryPage() {
   }
 
   return (
-    <AppShell active="routes" className="journey-page">
-      <section className="journey-grid">
-        <aside className="journey-left">
-          <RoutePlannerCard
-            origin={origin}
-            setOrigin={setOrigin}
-            destination={destination}
-            setDestination={setDestination}
-            departureTime={departureTime}
-            setDepartureTime={setDepartureTime}
-            travelMode={travelMode}
-            setTravelMode={setTravelMode}
-            radius={radius}
-            setRadius={setRadius}
-            preferences={preferences}
-            setPreferences={setPreferences}
-            layovers={layovers}
-            setLayovers={setLayovers}
-            loading={loading}
-            submitted={submitted}
-            onSubmit={discoverRoute}
-          />
-          <JourneySummaryCard
-            origin={origin}
-            destination={destination}
-            radius={radius}
-            results={results}
-            selectedCount={selected.size}
-          />
-        </aside>
+    <StitchJourneyResultsPage
+      origin={origin}
+      setOrigin={setOrigin}
+      destination={destination}
+      setDestination={setDestination}
+      departureTime={departureTime}
+      setDepartureTime={setDepartureTime}
+      travelMode={travelMode}
+      setTravelMode={setTravelMode}
+      radius={radius}
+      setRadius={setRadius}
+      preferences={preferences}
+      setPreferences={setPreferences}
+      layovers={layovers}
+      setLayovers={setLayovers}
+      loading={loading}
+      submitted={submitted}
+      onSubmit={discoverRoute}
+      results={results}
+      visibleLocations={visibleLocations}
+      selected={selected}
+      selectedPlace={selectedPlace}
+      setSelectedPlace={setSelectedPlace}
+      discoveryState={discoveryState}
+      scanStage={scanStage}
+      favorites={favorites}
+      setFavorites={setFavorites}
+      toggleLocation={toggleLocation}
+      layoverPlaces={layoverPlaces}
+      notify={notify}
+      setView={setView}
+    />
+  );
+}
 
-        <section className="journey-map-stage">
-          <div className="coordinate-strip">SCAN ALPHA-74 // ROUTE CORRIDOR // LIVE GEM SIGNALS</div>
-          <AnimatedRouteMap
-            route={results?.route}
-            locations={visibleLocations}
-            selected={selected}
-            onSelectPlace={setSelectedPlace}
-            variant="journey"
-          />
-        </section>
+function StitchJourneyResultsPage({
+  origin,
+  setOrigin,
+  destination,
+  setDestination,
+  departureTime,
+  setDepartureTime,
+  travelMode,
+  setTravelMode,
+  radius,
+  setRadius,
+  preferences,
+  setPreferences,
+  layovers,
+  setLayovers,
+  loading,
+  submitted,
+  onSubmit,
+  results,
+  visibleLocations,
+  selected,
+  selectedPlace,
+  setSelectedPlace,
+  discoveryState,
+  scanStage,
+  favorites,
+  setFavorites,
+  toggleLocation,
+  layoverPlaces,
+  notify,
+  setView
+}) {
+  const routeDistance = results?.route?.distance || "Awaiting scan";
+  const routeDuration = results?.route?.duration || "Verified only";
+  const startLabel = results?.route?.segments?.[0]?.from || origin || "Origin";
+  const endLabel = results?.route?.segments?.at?.(-1)?.to || destination || "Destination";
 
-        <aside className="journey-right">
-          <SectionHeader eyebrow="Discovered Places" title={results ? `${visibleLocations.length} route matches` : "Preview discovery stream"} compact />
-          <div className="wilderness-card-list">
-            {visibleLocations.map((location, index) => (
-              <HiddenGemCard
-                key={location.id}
-                place={location}
-                index={index}
-                selected={selected.has(location.id)}
-                saved={favorites.some((favorite) => favorite.id === location.id)}
-                onSelect={() => setSelectedPlace(location)}
-                onToggle={() => toggleLocation(location.id)}
-                onSave={() => {
-                  setFavorites(toggleFavorite(favorites, location));
-                  notify("Favorite updated.");
-                }}
-              />
-            ))}
+  return (
+    <main className="stitch-results-page">
+      <StitchTopNav active="routes" />
+      <div className="stitch-orb-bg" aria-hidden="true">
+        <span />
+        <span />
+      </div>
+      <section className="stitch-results-grid">
+        <aside className="stitch-mission-panel">
+          <form className="glass-card shimmer-border stitch-mission-card" onSubmit={onSubmit}>
+            <div className="stitch-mission-head">
+              <span className="font-label-caps text-label-caps text-tertiary">Mission Active</span>
+              <Gem className="text-primary" size={22} />
+            </div>
+            <h2 className="font-display-lg text-headline-lg">Discovery</h2>
+            <p className="text-on-surface-variant">Extraction path from origin to destination.</p>
+            <div className="stitch-route-fields">
+              <label>
+                <span>Origin</span>
+                <input value={origin} onChange={(event) => setOrigin(event.target.value)} disabled={loading} aria-invalid={submitted && !origin.trim()} />
+              </label>
+              <label>
+                <span>Destination</span>
+                <input value={destination} onChange={(event) => setDestination(event.target.value)} disabled={loading} aria-invalid={submitted && !destination.trim()} />
+              </label>
+              <label>
+                <span>Travel Date & Time</span>
+                <input type="datetime-local" value={departureTime} onChange={(event) => setDepartureTime(event.target.value)} disabled={loading} />
+              </label>
+              <label>
+                <span>Transport Mode</span>
+                <select value={travelMode} onChange={(event) => setTravelMode(event.target.value)} disabled={loading}>
+                  <option>Train</option>
+                  <option>Car</option>
+                  <option>Walk</option>
+                  <option>Bike</option>
+                </select>
+              </label>
+            </div>
+            <div className="stitch-radius-mini">
+              <div>
+                <span className="font-label-caps text-label-caps">Route corridor</span>
+                <strong>{radius}KM</strong>
+              </div>
+              <input type="range" min="1" max="10" value={radius} onChange={(event) => setRadius(Number(event.target.value))} />
+            </div>
+            <FilterChips options={preferenceOptions} selected={preferences} onToggle={(key) => toggleSet(preferences, setPreferences, key)} />
+            <button className="stitch-export-button" type="submit" disabled={loading}>
+              {loading ? <Loader2 className="spin" size={18} /> : <span>Run Discovery</span>}
+              <Compass size={18} />
+            </button>
+          </form>
+          <div className="glass-card stitch-tactical-stats">
+            <div>Distance: {routeDistance}</div>
+            <div>Duration: {routeDuration}</div>
+            <div>Found: {visibleLocations.length}</div>
           </div>
         </aside>
+
+        <section className="stitch-corridor-stage">
+          <div className="glass-card stitch-corridor-map">
+            <img src={stitchMapUrl} alt="" onError={hideBrokenImage} />
+            <div className="stitch-map-gradient" aria-hidden="true" />
+            <StitchRouteSvg route={results?.route} locations={visibleLocations} selected={selected} onSelectPlace={setSelectedPlace} loading={loading} scanStage={scanStage} />
+            <div className="stitch-live-feed">
+              <i />
+              <span>LIVE FEED ENCRYPTED</span>
+            </div>
+            <div className="stitch-dest-chip">
+              <span>{endLabel}</span>
+              <strong>DESTINATION</strong>
+            </div>
+            <div className="stitch-map-actions">
+              <button type="button" onClick={() => notify("Vector zoom recalibrated.")}><Search size={18} /></button>
+              <button type="button" onClick={() => notify("Layer stack toggled.")}><MapIcon size={18} /></button>
+            </div>
+            {!visibleLocations.length && (
+              <div className="stitch-map-empty glass-card">
+                <Compass size={32} />
+                <strong>{loading ? scanStageHeadline(scanStage) : "Run discovery to load verified places"}</strong>
+                <p>{loading ? "OffTrail is scanning real route and place providers." : "No route or place geometry is rendered until verified data comes back."}</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="stitch-found-panel">
+          <div className="stitch-found-head">
+            <h3 className="font-headline-lg-mobile text-on-surface">Found Gems</h3>
+            <span>Filter: Closest</span>
+          </div>
+          <div className="stitch-found-list custom-scrollbar">
+            {visibleLocations.length ? (
+              visibleLocations.map((location, index) => (
+                <StitchGemResultCard
+                  key={location.id}
+                  place={location}
+                  index={index}
+                  selected={selected.has(location.id)}
+                  saved={favorites.some((favorite) => favorite.id === location.id)}
+                  onSelect={() => setSelectedPlace(location)}
+                  onToggle={() => toggleLocation(location.id)}
+                  onSave={() => {
+                    setFavorites(toggleFavorite(favorites, location));
+                    notify("Favorite updated.");
+                  }}
+                />
+              ))
+            ) : (
+              <DiscoveryStatePanel
+                type={discoveryState?.type || "idle"}
+                message={discoveryState?.message}
+                onRetry={onSubmit}
+                onNearby={() => setView("nearby")}
+              />
+            )}
+          </div>
+        </section>
       </section>
-
-      <LayoverDiscoveryPanel suggestions={layoverSuggestions} onSelect={setSelectedPlace} />
-
-      <div className="route-page-actions">
-        <button className="wilderness-secondary" type="button" onClick={() => setView("results")}>
-          <MapIcon size={17} />
-          Open Full Results
-        </button>
-        <button className="wilderness-primary" type="button" onClick={() => setView("itinerary")}>
-          <Clock size={17} />
-          View Itinerary
-        </button>
-      </div>
-
+      {layoverPlaces.length > 0 && <LayoverDiscoveryPanel suggestions={layoverPlaces} onSelect={setSelectedPlace} layovers={layovers} />}
       {selectedPlace && <PlaceDetailDrawer place={selectedPlace} onClose={() => setSelectedPlace(null)} />}
-    </AppShell>
+    </main>
+  );
+}
+
+function StitchTopNav({ active = "explore" }) {
+  const { setView, setModal, auth } = useOffTrail();
+  return (
+    <header className="stitch-system-nav">
+      <div className="stitch-system-brand" onClick={() => setView("home")} role="button" tabIndex={0}>
+        Off-Trail
+      </div>
+      <nav>
+        <button className={active === "dashboard" ? "is-active" : ""} type="button" onClick={() => setView("dashboard")}>Dashboard</button>
+        <button className={active === "routes" ? "is-active" : ""} type="button" onClick={() => setView("routeDiscovery")}>Explore</button>
+        <button type="button" onClick={() => setView("favorites")}>Field Reports</button>
+      </nav>
+      <div>
+        <button type="button" onClick={() => setModal("planner")} aria-label="Search vectors"><Search size={19} /></button>
+        <button type="button" onClick={() => (auth.isAuthenticated ? setView("profile") : setModal("auth"))} aria-label="Account"><User size={19} /></button>
+      </div>
+    </header>
+  );
+}
+
+function StitchRouteSvg({ route, locations = [], selected = new Set(), onSelectPlace, loading, scanStage }) {
+  const bounds = route?.path?.length ? makeBounds(route.path, locations.map((location) => placeCoordinates(location))) : null;
+  const path = bounds ? routePathData(route.path, bounds) : "";
+  const pins = locations.map((location, index) => ({
+    ...location,
+    point: routeLocationPoint(location, index, bounds, route?.path)
+  }));
+
+  return (
+    <div className={`stitch-route-layer ${loading ? "is-loading" : ""} ${path ? "has-route" : "no-route"}`}>
+      <svg className="stitch-route-svg" fill="none" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {path && <path className="glow-line" d={path} stroke="#7cd5d5" strokeLinecap="round" strokeWidth="1.2" />}
+        {pins.slice(0, 10).map((pin) => (
+          <path
+            key={`branch-${pin.id}`}
+            className="stitch-branch-line"
+            d={`M ${pin.point.routeX || pin.point.x} ${pin.point.routeY || 50} Q ${(pin.point.x + (pin.point.routeX || pin.point.x)) / 2} ${pin.point.y - 10}, ${pin.point.x} ${pin.point.y}`}
+          />
+        ))}
+      </svg>
+      {loading && (
+        <div className="stitch-loading-scan">
+          <Gem size={28} />
+          <strong>{scanStageLabel(scanStage)}</strong>
+        </div>
+      )}
+      {pins.map((pin, index) => (
+        <button
+          key={pin.id}
+          className={`stitch-map-pin pin-float ${selected.has(pin.id) ? "is-selected" : ""}`}
+          type="button"
+          style={{ left: `${pin.point.x}%`, top: `${pin.point.y}%`, animationDelay: `${index * 180 - 500}ms` }}
+          onClick={() => onSelectPlace?.(pin)}
+          aria-label={`Open ${pin.name}`}
+        >
+          <span />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StitchGemResultCard({ place, index = 0, onSelect, onToggle, onSave, selected, saved }) {
+  const image = placeImageUrl(place);
+  const distance = place.detourDistance || place.distanceFromStationLabel || formatMeters(place.distance || place.distanceMeters || 0);
+  const tier = place.isHiddenGem ? "Rare Tier Extraction" : place.rating ? `${Number(place.rating).toFixed(1)} signal rating` : "Verified Map Signal";
+  return (
+    <article className={`glass-card group stitch-gem-result ${selected ? "is-selected" : ""}`} style={{ animationDelay: `${index * 90}ms` }} onClick={onSelect}>
+      <div className="stitch-gem-image">
+        <img src={image} alt={place.name} onError={(event) => handlePlaceImageError(event, place)} />
+        <div />
+        <span>{distance}</span>
+      </div>
+      <div className="stitch-gem-copy">
+        <div>{labelForType(place.type) || place.category || "Verified Place"}</div>
+        <h4>{place.name}</h4>
+        <p>{place.description}</p>
+        <footer>
+          <Gem size={16} />
+          <small>{tier}</small>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onSave?.(); }} aria-label={saved ? "Remove saved gem" : "Save gem"}>
+            <Heart size={15} fill={saved ? "currentColor" : "none"} />
+          </button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onToggle?.(); }}>
+            {selected ? "Added" : "Add"}
+          </button>
+        </footer>
+      </div>
+    </article>
   );
 }
 
@@ -1509,10 +1632,181 @@ function JourneySummaryCard({ origin, destination, radius, results, selectedCoun
         </div>
       </div>
       <div className="summary-stat-grid">
-        <Stat label="Gems found" value={results?.total || wildernessMockPlaces.length} />
+        <Stat label="Gems found" value={results ? results.total : 0} />
         <Stat label="Radius" value={`${radius} km`} />
         <Stat label="Added" value={selectedCount || 0} />
       </div>
+    </section>
+  );
+}
+
+function DiscoveryStatePanel({ type = "idle", message, onRetry, onNearby }) {
+  const states = {
+    idle: {
+      eyebrow: "Awaiting Scan",
+      title: "Run discovery to load real places",
+      copy: "Enter a real origin and destination, then run discovery. OffTrail will not invent places when routing data is unavailable.",
+      image: stitchMapUrl,
+      icon: Search,
+      primary: "Run Scan",
+      secondary: "Explore Nearby"
+    },
+    coordinates: {
+      eyebrow: "Location Error",
+      title: "Uncharted Coordinates",
+      copy: "Our scanners could not find a trustworthy match for that location. Check the spelling or try a nearby landmark.",
+      image: unchartedCoordinatesUrl,
+      icon: Compass,
+      primary: "Try Again",
+      secondary: "Search Nearby"
+    },
+    empty: {
+      eyebrow: "No Discoveries",
+      title: "A Silent Path Ahead",
+      copy: "No verified hidden gems came back for this route. Increase the radius, loosen filters, or try a parallel route.",
+      image: silentPathUrl,
+      icon: Navigation,
+      primary: "Expand Search",
+      secondary: "Modify Route"
+    },
+    system: {
+      eyebrow: "Signal Interrupted",
+      title: "Route intelligence offline",
+      copy: "Verified routing is not configured or the provider is temporarily unavailable. OffTrail stops safely instead of returning guesses.",
+      image: signalInterruptedUrl,
+      icon: XCircle,
+      primary: "Retry Scan",
+      secondary: "Explore Nearby"
+    }
+  };
+  const state = states[type] || states.idle;
+  const Icon = state.icon;
+
+  return (
+    <article className={`discovery-state-card is-${type}`}>
+      <img src={state.image} alt="" aria-hidden="true" />
+      <div className="discovery-state-shade" aria-hidden="true" />
+      <div className="discovery-scan-line" aria-hidden="true" />
+      <div className="discovery-state-icon">
+        <Icon size={34} />
+      </div>
+      <span className="wilderness-eyebrow">{state.eyebrow}</span>
+      <h3>{state.title}</h3>
+      <p>{message || state.copy}</p>
+      <div className="discovery-state-actions">
+        <button className="tiny-glass-button" type="button" onClick={onRetry}>
+          <Search size={14} />
+          {state.primary}
+        </button>
+        <button className="tiny-glass-button" type="button" onClick={onNearby}>
+          <Navigation size={14} />
+          {state.secondary}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function DiscoveryErrorPage() {
+  const { routeState, setView, setModal } = useOffTrail();
+  const error = routeState.discoveryError || { type: "system", message: "The wilderness connection is weak. Our intelligence systems are recalibrating." };
+  const isNoGems = error.type === "empty";
+  const isCoordinates = error.type === "coordinates";
+  const state = {
+    coordinates: {
+      eyebrow: "Signal interrupted",
+      title: "Uncharted Coordinates",
+      copy: "Our tactical scanners could not find a trustworthy match for this location. Check the spelling or try a nearby landmark.",
+      image: unchartedCoordinatesUrl,
+      icon: Compass,
+      primary: "Try Again",
+      secondary: "Search Nearby"
+    },
+    empty: {
+      eyebrow: "No echoes detected",
+      title: "A Silent Path Ahead",
+      copy: "Our intelligence has not pinpointed any hidden gems along this route yet. Try increasing your scan radius or exploring a parallel route.",
+      image: silentPathUrl,
+      icon: Navigation,
+      primary: "Modify Route",
+      secondary: "Explore Nearby"
+    },
+    system: {
+      eyebrow: "System recalibrating",
+      title: "Signal Interrupted",
+      copy: "Verified routing is not configured or the provider is temporarily unavailable. OffTrail stopped the scan instead of inventing a route.",
+      image: signalInterruptedUrl,
+      icon: XCircle,
+      primary: "Retry Scan",
+      secondary: "Explore Nearby"
+    }
+  }[error.type] || {
+    eyebrow: "System recalibrating",
+    title: "Signal Interrupted",
+    copy: "Verified routing is not configured or the provider is temporarily unavailable. OffTrail stopped the scan instead of inventing a route.",
+    image: signalInterruptedUrl,
+    icon: XCircle,
+    primary: "Retry Scan",
+    secondary: "Explore Nearby"
+  };
+  const Icon = state.icon;
+  const displayMessage = friendlyDiscoveryMessage(error, state.copy);
+
+  return (
+    <section className={`stitch-error-page ${isNoGems ? "is-no-gems" : ""} ${isCoordinates ? "is-coordinates" : ""}`}>
+      <img className="stitch-error-bg" src={state.image} alt="" aria-hidden="true" />
+      <div className="stitch-error-gradient" aria-hidden="true" />
+      <header className="stitch-error-nav">
+        <button className="stitch-wordmark" type="button" onClick={() => setView("home")}>OffTrail</button>
+        <div>
+          <button type="button" onClick={() => setView("routeDiscovery")}>Routes</button>
+          <button type="button" onClick={() => setView("nearby")}>Nearby</button>
+        </div>
+      </header>
+      <main className="stitch-error-canvas">
+        {isNoGems ? (
+          <div className="stitch-empty-orbit">
+            <span /><span /><span />
+            <svg viewBox="0 0 200 200" aria-hidden="true">
+              <path d="M40,160 Q80,140 100,100 T160,40" />
+              <circle cx="40" cy="160" r="3" />
+              <circle cx="160" cy="40" r="3" />
+            </svg>
+            <div>
+              <Icon size={56} />
+              <strong>No Echoes Detected</strong>
+            </div>
+          </div>
+        ) : (
+          <div className="stitch-error-orb">
+            <Icon size={76} />
+            <i /><i /><i />
+          </div>
+        )}
+        <article className="stitch-error-card">
+          <span className="wilderness-eyebrow">{state.eyebrow}</span>
+          <h1>{state.title}</h1>
+          <p>{displayMessage}</p>
+          {isNoGems && (
+            <div className="stitch-radius-preview">
+              <span>Scan Radius</span>
+              <strong>{routeState.radius || 5}km</strong>
+              <div><i /></div>
+              <small><span>2km</span><span>20km</span></small>
+            </div>
+          )}
+          <div className="stitch-error-actions">
+            <button className="wilderness-primary" type="button" onClick={() => (isCoordinates ? setModal("planner") : setView("routeDiscovery"))}>
+              <Search size={17} />
+              {state.primary}
+            </button>
+            <button className="wilderness-secondary" type="button" onClick={() => setView("nearby")}>
+              <Navigation size={17} />
+              {state.secondary}
+            </button>
+          </div>
+        </article>
+      </main>
     </section>
   );
 }
@@ -1526,7 +1820,7 @@ function ExploreAroundYouPage() {
   const [openNow, setOpenNow] = useState(true);
   const [safeLate, setSafeLate] = useState(false);
   const [userLocation, setUserLocation] = useState({ lat: 64.134, lng: -21.467 });
-  const [places, setPlaces] = useState(fallbackIntelligenceLocations({ lat: 64.134, lng: -21.467 }));
+  const [places, setPlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1554,9 +1848,9 @@ function ExploreAroundYouPage() {
       notify("Nearby scan complete.");
     } catch (error) {
       console.error("Nearby scan error:", error);
-      notify("Failed to load. Please try again.", "error", runNearbyScan);
-      const fallback = fallbackIntelligenceLocations(userLocation).map(normalizeIntelligencePlace);
-      setPlaces(fallback);
+      const message = error instanceof Error ? error.message : "Failed to load. Please try again.";
+      notify(message, "error", runNearbyScan);
+      setPlaces([]);
     } finally {
       setLoading(false);
     }
@@ -1569,19 +1863,106 @@ function ExploreAroundYouPage() {
   });
 
   return (
-    <AppShell active="nearby" className="nearby-page">
-      <section className="nearby-layout">
-        <aside className="nearby-controls wilderness-glass shimmer-border">
-          <SectionHeader eyebrow="Explore Around You" title="Nearby radar" compact />
-          <form className="nearby-form" onSubmit={runNearbyScan}>
-            <PlaceInput label="Location" value={location} onChange={setLocation} placeholder="Current location or city" disabled={loading} />
-            <RadiusSelector min={2} max={10} value={radius} onChange={setRadius} label="Scan radius" />
-            <div className="time-selector" role="group" aria-label="Available time">
-              {["30 min", "1 hour", "2 hours", "4 hours"].map((option) => (
-                <button key={option} className={timeWindow === option ? "is-active" : ""} type="button" onClick={() => setTimeWindow(option)}>
-                  {option}
-                </button>
-              ))}
+    <StitchSpatialRadarPage
+      location={location}
+      setLocation={setLocation}
+      radius={radius}
+      setRadius={setRadius}
+      timeWindow={timeWindow}
+      setTimeWindow={setTimeWindow}
+      filters={filters}
+      setFilters={setFilters}
+      openNow={openNow}
+      setOpenNow={setOpenNow}
+      safeLate={safeLate}
+      setSafeLate={setSafeLate}
+      userLocation={userLocation}
+      locations={filteredPlaces}
+      activeId={activeId}
+      setActiveId={setActiveId}
+      selectedPlace={selectedPlace}
+      setSelectedPlace={setSelectedPlace}
+      loading={loading}
+      onSubmit={runNearbyScan}
+      favorites={favorites}
+      setFavorites={setFavorites}
+      notify={notify}
+    />
+  );
+}
+
+function StitchSpatialRadarPage({
+  location,
+  setLocation,
+  radius,
+  setRadius,
+  timeWindow,
+  setTimeWindow,
+  filters,
+  setFilters,
+  openNow,
+  setOpenNow,
+  safeLate,
+  setSafeLate,
+  userLocation,
+  locations,
+  activeId,
+  setActiveId,
+  selectedPlace,
+  setSelectedPlace,
+  loading,
+  onSubmit,
+  favorites,
+  setFavorites,
+  notify
+}) {
+  const radiusOptions = [2, 5, 10];
+  const timeOptions = ["1 hour", "2 hours", "4 hours"];
+  const pins = locations.map((place, index) => ({
+    ...place,
+    point: place.point || locationPoint(place, userLocation, index)
+  }));
+  const featured = pins[0];
+  const sideCards = pins.slice(1, 3);
+  const wideCard = pins[3] || pins[0];
+
+  return (
+    <section className="stitch-radar-page">
+      <StitchTopNav active="nearby" />
+      <main className="stitch-spatial-main">
+        <aside className="stitch-radar-controls glass-panel">
+          <div className="stitch-radar-status">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">Operational Status</span>
+            <div>
+              <i />
+              <h2 className="font-headline-lg text-primary">Spatial Intel</h2>
+            </div>
+          </div>
+          <form onSubmit={onSubmit} className="stitch-radar-form">
+            <label className="stitch-vector-field">
+              <span>Search Vector</span>
+              <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Current location or city" disabled={loading} />
+            </label>
+            <div className="stitch-radar-group">
+              <label className="font-label-caps text-label-caps text-on-surface-variant">Scan Radius</label>
+              <div className="stitch-radius-buttons">
+                {radiusOptions.map((option) => (
+                  <button key={option} className={radius === option ? "is-active" : ""} type="button" onClick={() => setRadius(option)} disabled={loading}>
+                    {option}KM
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="stitch-radar-group">
+              <label className="font-label-caps text-label-caps text-on-surface-variant">Temporal Window</label>
+              <div className="stitch-time-buttons">
+                {timeOptions.map((option) => (
+                  <button key={option} className={timeWindow === option ? "is-active" : ""} type="button" onClick={() => setTimeWindow(option)} disabled={loading}>
+                    <span>{option.replace(" hour", "h")} Window</span>
+                    <Clock size={16} />
+                  </button>
+                ))}
+              </div>
             </div>
             <FilterChips
               options={[
@@ -1591,63 +1972,160 @@ function ExploreAroundYouPage() {
                 { key: "photo_op", label: "Photo spots" },
                 { key: "local", label: "Local favorites" },
                 { key: "garden", label: "Gardens" },
-                { key: "open-now", label: "Open now" },
-                { key: "safe-night", label: "Safe at night" },
                 { key: "food", label: "Food" },
                 { key: "quiet", label: "Quiet places" }
               ]}
               selected={filters}
               onToggle={(key) => toggleSet(filters, setFilters, key)}
             />
-            <div className="toggle-grid">
-              <label className="toggle-row">
+            <div className="stitch-radar-toggles">
+              <label>
                 <input type="checkbox" checked={openNow} onChange={() => setOpenNow(!openNow)} />
                 <span>Open now</span>
               </label>
-              <label className="toggle-row">
+              <label>
                 <input type="checkbox" checked={safeLate} onChange={() => setSafeLate(!safeLate)} />
-                <span>Safe late-night</span>
+                <span>Night safe</span>
               </label>
             </div>
-            <button className="wilderness-primary full-width" type="submit" disabled={loading}>
-              {loading ? <Loader2 className="spin" size={18} /> : <Navigation size={18} />}
-              {loading ? "Scanning..." : "Scan Nearby"}
+            <button className="stitch-deploy-button" type="submit" disabled={loading}>
+              {loading ? <Gem size={18} /> : <Navigation size={18} />}
+              {loading ? "Deploying scan" : "Deploy Drone"}
             </button>
           </form>
         </aside>
 
-        <ExploreAroundYouRadar
-          userLocation={userLocation}
-          locations={filteredPlaces}
-          radius={radius}
-          activeId={activeId}
-          setActiveId={setActiveId}
-          onSelect={setSelectedPlace}
-        />
+        <section className="stitch-radar-canvas">
+          <div className="stitch-radar-background" aria-hidden="true">
+            <img src={stitchHeroUrl} alt="" onError={hideBrokenImage} />
+            <div />
+          </div>
+          <div className="stitch-radar-visual" aria-label="Spatial radar map">
+            <div className="stitch-radar-rings" aria-hidden="true">
+              <span /><span /><span />
+            </div>
+            <div className="radar-sweep" aria-hidden="true" />
+            <svg className="stitch-radar-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {pins.slice(0, 10).map((pin) => (
+                <path
+                  key={pin.id}
+                  className={`traveling-light ${activeId === pin.id ? "is-active" : ""}`}
+                  d={`M 50 50 Q ${(50 + pin.point.x) / 2} ${(50 + pin.point.y) / 2 - 10}, ${pin.point.x} ${pin.point.y}`}
+                />
+              ))}
+            </svg>
+            <button className="stitch-user-dot" type="button" aria-label="Your location">
+              <Navigation size={18} />
+            </button>
+            {pins.map((pin, index) => (
+              <button
+                key={pin.id}
+                className={`stitch-radar-gem gem-bob ${activeId === pin.id ? "is-active" : ""}`}
+                style={{ left: `${pin.point.x}%`, top: `${pin.point.y}%`, animationDelay: `${index * -0.45}s` }}
+                type="button"
+                onMouseEnter={() => setActiveId(pin.id)}
+                onMouseLeave={() => setActiveId(null)}
+                onFocus={() => setActiveId(pin.id)}
+                onBlur={() => setActiveId(null)}
+                onClick={() => setSelectedPlace(pin)}
+              >
+                {pin.type === "photo_op" ? <Camera size={16} /> : <Gem size={16} />}
+                <strong>{pin.name}</strong>
+              </button>
+            ))}
+            {!pins.length && (
+              <div className="stitch-radar-empty glass-panel">
+                {loading ? <Gem size={34} /> : <Compass size={34} />}
+                <strong>{loading ? "Scanning live vectors" : "Awaiting verified scan"}</strong>
+                <p>{loading ? "OffTrail is asking the location intelligence endpoint for real places." : "Deploy the scan to load nearby places from real map data."}</p>
+              </div>
+            )}
+            <div className="stitch-radar-coordinate top">N {Math.abs(userLocation.lat || 0).toFixed(4)}°</div>
+            <div className="stitch-radar-coordinate bottom">E {Math.abs(userLocation.lng || 0).toFixed(4)}°</div>
+          </div>
 
-        <aside className="nearby-results">
-          <SectionHeader eyebrow={`${timeWindow} available`} title={`${filteredPlaces.length} matches near you`} compact />
-          <div className="wilderness-card-list">
-            {filteredPlaces.map((place, index) => (
-              <HiddenGemCard
-                key={place.id}
-                place={place}
-                index={index}
-                active={activeId === place.id}
-                saved={favorites.some((favorite) => favorite.id === place.id)}
-                onSelect={() => setSelectedPlace(place)}
-                onSave={() => {
+          <div className="stitch-live-recommendations">
+            <div className="stitch-live-head">
+              <div>
+                <span className="font-label-caps text-label-caps text-primary">Intelligence</span>
+                <h3 className="font-headline-lg text-on-surface">Live Recommendations</h3>
+              </div>
+              <div>
+                <button type="button" aria-label="Previous recommendation"><ArrowLeft size={18} /></button>
+                <button type="button" aria-label="Next recommendation"><ArrowRight size={18} /></button>
+              </div>
+            </div>
+            <div className="stitch-bento-grid">
+              {featured ? (
+                <StitchRecommendationCard place={featured} variant="large" active={activeId === featured.id} saved={favorites.some((favorite) => favorite.id === featured.id)} onHover={setActiveId} onSelect={setSelectedPlace} onSave={() => {
+                  setFavorites(toggleFavorite(favorites, featured));
+                  notify("Favorite updated.");
+                }} />
+              ) : (
+                <article className="glass-panel stitch-reco-card is-large is-empty">
+                  <Search size={28} />
+                  <h4>Deploy scan to load live places</h4>
+                  <p>OffTrail will not display invented locations. Results appear here only after the nearby endpoint returns verified data.</p>
+                </article>
+              )}
+              {sideCards.map((place) => (
+                <StitchRecommendationCard key={place.id} place={place} active={activeId === place.id} saved={favorites.some((favorite) => favorite.id === place.id)} onHover={setActiveId} onSelect={setSelectedPlace} onSave={() => {
                   setFavorites(toggleFavorite(favorites, place));
                   notify("Favorite updated.");
-                }}
-                onHover={(active) => setActiveId(active ? place.id : null)}
-              />
-            ))}
+                }} />
+              ))}
+              {wideCard && (
+                <StitchRecommendationCard place={wideCard} variant="wide" active={activeId === wideCard.id} saved={favorites.some((favorite) => favorite.id === wideCard.id)} onHover={setActiveId} onSelect={setSelectedPlace} onSave={() => {
+                  setFavorites(toggleFavorite(favorites, wideCard));
+                  notify("Favorite updated.");
+                }} />
+              )}
+            </div>
           </div>
-        </aside>
-      </section>
+        </section>
+      </main>
       {selectedPlace && <PlaceDetailDrawer place={selectedPlace} onClose={() => setSelectedPlace(null)} />}
-    </AppShell>
+    </section>
+  );
+}
+
+function StitchRecommendationCard({ place, variant = "small", active, saved, onHover, onSelect, onSave }) {
+  const image = placeImageUrl(place);
+  const distance = place.detourDistance || formatMeters(place.distance || place.distanceMeters || 0);
+  const rating = Number(place.rating || 0);
+
+  return (
+    <article
+      className={`glass-panel stitch-reco-card is-${variant} ${active ? "is-active" : ""}`}
+      onMouseEnter={() => onHover?.(place.id)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(place.id)}
+      onBlur={() => onHover?.(null)}
+      tabIndex={0}
+      role="button"
+      onClick={() => onSelect?.(place)}
+    >
+      <img src={image} alt={place.name} onError={(event) => handlePlaceImageError(event, place)} />
+      <div className="stitch-reco-shade" />
+      <div className="stitch-reco-body">
+        <div>
+          <span>{place.isHiddenGem ? "98% MATCH" : `${rating ? rating.toFixed(1) : "MAP"} SIGNAL`}</span>
+          <small>{distance} away</small>
+        </div>
+        <h4>{place.name}</h4>
+        <p>{place.description}</p>
+        <footer>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onSave?.(); }}>
+            <Heart size={15} fill={saved ? "currentColor" : "none"} />
+            {saved ? "Saved" : "Save"}
+          </button>
+          <a href={googleDirectionsUrl(place)} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
+            Directions
+            <ArrowRight size={15} />
+          </a>
+        </footer>
+      </div>
+    </article>
   );
 }
 
@@ -1674,6 +2152,7 @@ function ExploreAroundYouRadar({ userLocation, locations, radius, activeId, setA
             key={pin.id}
             className={`radar-connection ${activeId === pin.id ? "is-active" : ""}`}
             d={`M 50 50 Q ${(50 + pin.point.x) / 2} ${(50 + pin.point.y) / 2 - 12}, ${pin.point.x} ${pin.point.y}`}
+            pathLength="1"
           />
         ))}
       </svg>
@@ -1697,6 +2176,13 @@ function ExploreAroundYouRadar({ userLocation, locations, radius, activeId, setA
           <span>{pin.name}</span>
         </button>
       ))}
+      {!pins.length && (
+        <div className="radar-empty-state">
+          <Compass size={28} />
+          <strong>No scan results yet</strong>
+          <span>Enter a location or allow browser location, then run Scan Nearby.</span>
+        </div>
+      )}
     </section>
   );
 }
@@ -1737,17 +2223,28 @@ function FilterChips({ options, selected, onToggle }) {
   );
 }
 
-function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelectPlace, variant = "journey" }) {
+function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelectPlace, variant = "journey", scanStage = "idle", loading = false }) {
+  const routeBounds = route?.path?.length ? makeBounds(route.path, locations.map((location) => placeCoordinates(location))) : null;
+  const routePath = routeBounds ? routePathData(route.path, routeBounds) : "";
   const pins = locations.map((location, index) => ({
     ...location,
-    point: location.point || routeLocationPoint(location, index)
+    point: location.point || routeLocationPoint(location, index, routeBounds, route?.path)
   }));
   const startLabel = route?.segments?.[0]?.from || "Origin";
   const endLabel = route?.segments?.at?.(-1)?.to || "Destination";
+  const hasVerifiedRoute = Boolean(routePath);
+  const routeStatus = hasVerifiedRoute ? "VERIFIED ROUTE" : loading ? "SCANNING GEOMETRY" : "AWAITING SCAN";
+  const coordinateLabel = hasVerifiedRoute
+    ? formatMapCoordinate(route.path[0]?.[0], route.path[0]?.[1])
+    : "NO VERIFIED COORDINATES";
 
   return (
-    <section className={`animated-route-map ${variant}`} aria-label="Animated route map">
+    <section className={`animated-route-map ${variant} scan-${scanStage} ${loading ? "is-scanning" : ""} ${hasVerifiedRoute ? "has-route" : "no-route"}`} aria-label="Animated route map">
+      <img className="map-terrain-image" src={stitchMapUrl} alt="" aria-hidden="true" />
       <div className="map-atmosphere" />
+      <div className="stitch-map-frame" aria-hidden="true">
+        <span /><span /><span /><span />
+      </div>
       <svg className="animated-map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <linearGradient id={`routeGradient-${variant}`} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -1755,24 +2252,47 @@ function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelec
             <stop offset="100%" stopColor="#7cd5d5" />
           </linearGradient>
         </defs>
-        <path className="route-shadow-line" d="M 10 78 C 27 72 32 34 51 38 S 72 78 88 18" />
-        <path className="route-active-line" d="M 10 78 C 27 72 32 34 51 38 S 72 78 88 18" stroke={`url(#routeGradient-${variant})`} />
-        {pins.slice(0, 10).map((pin) => (
+        {hasVerifiedRoute && <path className="route-shadow-line" d={routePath} />}
+        {hasVerifiedRoute && <path className="route-active-line" d={routePath} stroke={`url(#routeGradient-${variant})`} pathLength="1" />}
+        {hasVerifiedRoute && pins.slice(0, 10).map((pin) => (
           <path
             key={`line-${pin.id}`}
             className="route-branch-line"
             d={`M ${pin.point.routeX || pin.point.x} ${pin.point.routeY || 50} Q ${(pin.point.x + (pin.point.routeX || pin.point.x)) / 2} ${pin.point.y - 12}, ${pin.point.x} ${pin.point.y}`}
+            pathLength="1"
           />
         ))}
       </svg>
-      <div className="map-endpoint is-start" style={{ left: "10%", top: "78%" }}>
-        <span />
-        <strong>{startLabel}</strong>
-      </div>
-      <div className="map-endpoint is-end" style={{ left: "88%", top: "18%" }}>
-        <span />
-        <strong>{endLabel}</strong>
-      </div>
+      {(loading || hasVerifiedRoute || !pins.length) && (
+        <div className="route-scan-sequence" aria-hidden="true">
+          <span className="route-radar-ring" />
+          <span className="route-radar-ring delay-one" />
+          <span className="route-radar-ring delay-two" />
+          <div className="route-scanner-core">
+            <Gem size={24} />
+          </div>
+        </div>
+      )}
+      {loading && (
+        <div className="route-scan-overlay">
+          <span className="wilderness-eyebrow">{scanStageLabel(scanStage)}</span>
+          <strong>{scanStageHeadline(scanStage)}</strong>
+          <div className="scan-progress-track"><i /></div>
+          <small>OffTrail only renders verified routes and real place signals.</small>
+        </div>
+      )}
+      {hasVerifiedRoute && (
+        <>
+          <div className="map-endpoint is-start" style={{ left: "10%", top: "78%" }}>
+            <span />
+            <strong>{startLabel}</strong>
+          </div>
+          <div className="map-endpoint is-end" style={{ left: "88%", top: "18%" }}>
+            <span />
+            <strong>{endLabel}</strong>
+          </div>
+        </>
+      )}
       {pins.map((location, index) => (
         <button
           key={location.id}
@@ -1786,16 +2306,25 @@ function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelec
           <span>{location.name}</span>
         </button>
       ))}
-      <div className="map-hud top-left">LAT 49.4478 // LON 11.0814</div>
-      <div className="map-hud bottom-right">SIGNALS: {pins.length} // STATUS: OPTIMAL</div>
+      <div className="map-hud top-left">{coordinateLabel}</div>
+      <div className="map-hud bottom-right">SIGNALS: {pins.length} // STATUS: {routeStatus}</div>
+      {!pins.length && (
+        <div className="animated-map-empty">
+          <Gem size={28} />
+          <strong>Awaiting verified route scan</strong>
+          <span>Real pins appear here after OffTrail receives route and place data.</span>
+        </div>
+      )}
     </section>
   );
 }
 
 function HiddenGemCard({ place, index = 0, selected = false, saved = false, active = false, onSelect, onToggle, onSave, onHover }) {
-  const image = place.photo || place.photos?.[0] || thumbnailUrl;
+  const image = placeImageUrl(place);
   const distance = place.distanceFromStationLabel || place.detourDistance || formatMeters(place.distance);
   const open = place.isOpenAtArrival ?? place.isOpen ?? true;
+  const directionsUrl = googleDirectionsUrl(place);
+  const rating = Number(place.rating || 0);
 
   function handleCardKeyDown(event) {
     if (event.key === "Enter" || event.key === " ") {
@@ -1811,7 +2340,7 @@ function HiddenGemCard({ place, index = 0, selected = false, saved = false, acti
       tabIndex={0}
       role="button"
       onClick={(event) => {
-        if (event.target.closest("button")) return;
+        if (event.target.closest("button,a")) return;
         onSelect?.();
       }}
       onKeyDown={handleCardKeyDown}
@@ -1820,7 +2349,10 @@ function HiddenGemCard({ place, index = 0, selected = false, saved = false, acti
       onFocus={() => onHover?.(true)}
       onBlur={() => onHover?.(false)}
     >
-      <img src={image} alt={place.name} />
+      <div className="hidden-card-image-wrap">
+        <img src={image} alt={place.name} onError={(event) => handlePlaceImageError(event, place)} />
+        {place.isHiddenGem && <span className="hidden-card-badge">Hidden gem</span>}
+      </div>
       <div className="hidden-card-body">
         <div className="hidden-card-topline">
           <StatusBadge open={open} is24Hours={place.is24Hours} nextOpenTime={place.nextOpenTime} />
@@ -1831,7 +2363,7 @@ function HiddenGemCard({ place, index = 0, selected = false, saved = false, acti
         <div className="place-meta-row">
           <span><MapPin size={13} /> {distance}</span>
           {(place.walkingTime || place.estimatedTime) && <span><Timer size={13} /> {place.walkingTime || place.estimatedTime} min</span>}
-          <span><Star size={13} /> {Number(place.rating || 4.6).toFixed(1)}</span>
+          <span><Star size={13} /> {rating > 0 ? rating.toFixed(1) : "Unrated"}</span>
         </div>
         <div className="tag-strip">
           <span>{labelForType(place.type) || place.category}</span>
@@ -1839,6 +2371,10 @@ function HiddenGemCard({ place, index = 0, selected = false, saved = false, acti
           {place.safeForNighttime && <span>Safe late</span>}
         </div>
         <div className="card-actions-row">
+          <a className="tiny-glass-button" href={directionsUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open directions to ${place.name}`}>
+            <Navigation size={14} />
+            Directions
+          </a>
           <button className="tiny-glass-button" type="button" onClick={onSelect}>
             View details
           </button>
@@ -1871,10 +2407,126 @@ function StatusBadge({ open, is24Hours, nextOpenTime }) {
   );
 }
 
+function placeCoordinates(place) {
+  const lat = Number(place.lat ?? place.coordinates?.lat ?? place.location?.latitude);
+  const lng = Number(place.lng ?? place.coordinates?.lng ?? place.location?.longitude);
+  return {
+    lat: Number.isFinite(lat) ? lat : 0,
+    lng: Number.isFinite(lng) ? lng : 0
+  };
+}
+
+function googleDirectionsUrl(place) {
+  const { lat, lng } = placeCoordinates(place);
+  const destination = lat && lng ? `${lat},${lng}` : place.name || "";
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}
+
+function placeImageUrl(place) {
+  const providerPhoto = firstUsableImage([place.photo, ...(place.photos || [])]);
+  return providerPhoto || googleStaticMapUrl(place) || osmStaticMapUrl(place) || offTrailPlaceholderImage(place.name || "Verified place", "No provider photo available");
+}
+
+function hideBrokenImage(event) {
+  event.currentTarget.style.opacity = "0";
+  event.currentTarget.setAttribute("aria-hidden", "true");
+}
+
+function handlePlaceImageError(event, place) {
+  const img = event.currentTarget;
+  const stage = img.dataset.fallbackStage || "primary";
+
+  if (stage === "primary") {
+    const mapPreview = googleStaticMapUrl(place) || osmStaticMapUrl(place);
+    if (mapPreview) {
+      img.dataset.fallbackStage = "map";
+      img.src = mapPreview;
+      return;
+    }
+  }
+
+  img.dataset.fallbackStage = "placeholder";
+  img.src = offTrailPlaceholderImage(place?.name || "Verified place", "Map preview unavailable");
+}
+
+function firstUsableImage(candidates = []) {
+  return candidates.find((candidate) => {
+    if (typeof candidate !== "string") return false;
+    if (!candidate.trim()) return false;
+    return /^(https?:|data:image\/|\/)/i.test(candidate);
+  });
+}
+
+function offTrailPlaceholderImage(title = "Verified place", subtitle = "Photo unavailable") {
+  const safeTitle = String(title).slice(0, 42);
+  const safeSubtitle = String(subtitle).slice(0, 52);
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+      <defs>
+        <radialGradient id="g" cx="68%" cy="28%" r="68%">
+          <stop offset="0" stop-color="#7cd5d5" stop-opacity="0.34"/>
+          <stop offset="0.42" stop-color="#203431" stop-opacity="0.28"/>
+          <stop offset="1" stop-color="#0d0e0e"/>
+        </radialGradient>
+        <linearGradient id="line" x1="0" x2="1">
+          <stop offset="0" stop-color="#b4cbc6" stop-opacity="0"/>
+          <stop offset="0.5" stop-color="#b4cbc6"/>
+          <stop offset="1" stop-color="#7cd5d5" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <rect width="960" height="540" fill="#0d0e0e"/>
+      <rect width="960" height="540" fill="url(#g)"/>
+      <g opacity="0.28" stroke="#b4cbc6" stroke-width="1">
+        <path d="M0 410 C160 310 280 345 420 260 S690 120 960 176" fill="none"/>
+        <path d="M0 452 C160 370 318 388 480 310 S760 215 960 240" fill="none"/>
+        <circle cx="688" cy="192" r="52" fill="none"/>
+        <circle cx="688" cy="192" r="96" fill="none" opacity="0.5"/>
+      </g>
+      <path d="M0 416 C180 306 320 352 476 260 S720 126 960 176" stroke="url(#line)" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <g transform="translate(72 342)">
+        <path d="M36 0 72 26 56 72 16 72 0 26Z" fill="#b4cbc6"/>
+        <text x="96" y="22" fill="#e3e2e1" font-family="Hanken Grotesk, Arial, sans-serif" font-size="32" font-weight="700">${escapeSvgText(safeTitle)}</text>
+        <text x="96" y="58" fill="#c2c8c5" font-family="Hanken Grotesk, Arial, sans-serif" font-size="18" letter-spacing="3">${escapeSvgText(safeSubtitle).toUpperCase()}</text>
+      </g>
+    </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function escapeSvgText(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function googleStaticMapUrl(place) {
+  if (!publicGoogleMapsApiKey) return "";
+  const { lat, lng } = placeCoordinates(place);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return "";
+  const marker = encodeURIComponent(`color:purple|${lat},${lng}`);
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=640x300&scale=2&markers=${marker}&key=${publicGoogleMapsApiKey}`;
+}
+
+function osmStaticMapUrl(place) {
+  const { lat, lng } = placeCoordinates(place);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return "";
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=640x360&markers=${lat},${lng},red-pushpin`;
+}
+
+function formatCoordinates(place) {
+  const { lat, lng } = placeCoordinates(place);
+  if (!lat || !lng) return "Map preview available after location data loads.";
+  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+}
+
 function PlaceDetailDrawer({ place, onClose }) {
   const { routeState, setRouteState, setView, notify, favorites, setFavorites } = useOffTrail();
-  const image = place.photo || place.photos?.[0] || thumbnailUrl;
+  const image = placeImageUrl(place);
   const saved = favorites.some((favorite) => favorite.id === place.id);
+  const directionsUrl = googleDirectionsUrl(place);
+  const staticMapUrl = googleStaticMapUrl(place) || osmStaticMapUrl(place);
+  const rating = Number(place.rating || 0);
 
   function addToItinerary() {
     setRouteState((state) => {
@@ -1895,68 +2547,140 @@ function PlaceDetailDrawer({ place, onClose }) {
   }
 
   return (
-    <div className="place-detail-layer">
-      <button className="place-detail-backdrop" type="button" aria-label="Close detail" onClick={onClose} />
-      <aside className="place-detail-drawer wilderness-glass" role="dialog" aria-modal="true" aria-label={place.name}>
-        <button className="drawer-back-button" type="button" onClick={onClose} aria-label="Back">
-          <ArrowLeft size={20} />
-        </button>
-        <img className="drawer-hero-image" src={image} alt={place.name} />
-        <div className="drawer-content">
-          <div className="drawer-kicker">
-            <span>{labelForType(place.type) || place.category}</span>
-            <strong><Star size={15} /> {Number(place.rating || 4.7).toFixed(1)}</strong>
+    <div className="stitch-detail-layer" role="dialog" aria-modal="true" aria-label={place.name}>
+      <button className="stitch-detail-backdrop" type="button" aria-label="Close detail" onClick={onClose} />
+      <section className="stitch-detail-page">
+        <div className="stitch-detail-map-bg" style={{ backgroundImage: `url(${image})` }} aria-hidden="true" />
+        <header className="stitch-detail-nav">
+          <button type="button" onClick={onClose} aria-label="Back">
+            <ArrowLeft size={20} />
+          </button>
+          <strong>Off-Trail</strong>
+          <button type="button" onClick={() => {
+            setFavorites(toggleFavorite(favorites, place));
+            notify("Favorite updated.");
+          }} aria-label={saved ? "Remove saved gem" : "Save gem"}>
+            <Heart size={20} fill={saved ? "currentColor" : "none"} />
+          </button>
+        </header>
+
+        <section className="stitch-detail-hero">
+          <img src={image} alt={place.name} onError={(event) => handlePlaceImageError(event, place)} />
+          <div className="stitch-detail-hero-overlay" />
+          <div className="stitch-detail-copy">
+            <div className="stitch-detail-kicker">
+              <span>{place.isHiddenGem ? "Rare Discovery" : labelForType(place.type) || place.category}</span>
+              <div>
+                {[0, 1, 2, 3, 4].map((star) => (
+                  <Star key={star} size={16} fill={rating >= star + 1 || (rating > star && rating < star + 1) ? "currentColor" : "none"} />
+                ))}
+              </div>
+            </div>
+            <h1>{place.name}</h1>
+            <p>{place.description}</p>
           </div>
-          <h2>{place.name}</h2>
-          <p>{place.description}</p>
-          <div className="detail-metric-grid">
-            <Stat label="Distance" value={place.distanceFromStationLabel || place.detourDistance || formatMeters(place.distance)} />
-            <Stat label="Travel time" value={`${place.walkingTime || place.estimatedTime || 20} min`} />
-            <Stat label="Photo score" value={`${place.photoScore || 91}%`} />
-            <Stat label="Crowd level" value={place.crowdLevel || "Low"} />
+          <div className="float-gem stitch-floating-detail-pin" aria-hidden="true">
+            <div className="glass-panel shimmer-border">
+              <Gem size={56} />
+            </div>
           </div>
-          <div className="detail-note-grid">
-            <article>
-              <span>Best time</span>
-              <p>{place.bestTime || place.todaysHours || "Golden hour"}</p>
-            </article>
-            <article>
-              <span>Why it is special</span>
-              <p>{place.isHiddenGem ? "Low review density with high signal, strong local character, and a short detour." : "Strong route fit with visual payoff and practical timing."}</p>
-            </article>
-            <article>
-              <span>Safety note</span>
-              <p>{place.safetyNote || (place.safeForNighttime ? "Verified as practical for late-night movement." : "Use normal travel awareness and check access before leaving the route.")}</p>
-            </article>
-          </div>
-          <div className="tag-strip drawer-tags">
-            {(place.tags || [place.category, place.safeForNighttime ? "Safe late-night" : "Route fit"]).map((tag) => <span key={tag}>{tag}</span>)}
-          </div>
-          <div className="drawer-action-grid">
-            <button className="wilderness-primary" type="button" onClick={addToItinerary}><Plus size={17} /> Add to itinerary</button>
-            <button className="wilderness-secondary" type="button" onClick={() => {
-              setFavorites(toggleFavorite(favorites, place));
-              notify("Favorite updated.");
-            }}>
-              <Heart size={17} fill={saved ? "currentColor" : "none"} />
-              {saved ? "Saved" : "Save gem"}
-            </button>
-            <button className="wilderness-secondary" type="button" onClick={() => setView(routeState.results ? "results" : "routeDiscovery")}><Navigation size={17} /> View route</button>
-            <button className="wilderness-secondary" type="button" onClick={sharePlace}><Share2 size={17} /> Share</button>
-          </div>
-        </div>
-      </aside>
+        </section>
+
+        <section className="stitch-detail-grid">
+          <article className="glass-panel shimmer-border stitch-detail-card is-special">
+            <div>
+              <Settings className="text-primary" size={22} />
+              <h2>Why It's Special</h2>
+            </div>
+            <div className="stitch-detail-two-col">
+              <section>
+                <h3>Signal Profile</h3>
+                <p>{place.isHiddenGem ? "High rating and low crowd density make this a stronger hidden-gem signal than the obvious tourist stops nearby." : "This place matched the route corridor with practical distance, access, and timing."}</p>
+              </section>
+              <section>
+                <h3>Field Context</h3>
+                <p>{place.address || place.safetyNote || "Real map data is available for this stop. Check live route conditions before departing."}</p>
+              </section>
+            </div>
+            <div className="stitch-detail-tags">
+              {(place.tags || [labelForType(place.type), place.safeForNighttime ? "Safe late-night" : "Route fit", place.isOpenAtArrival ? "Open now" : "Check hours"]).map((tag) => (
+                <span key={tag}><Gem size={15} />{tag}</span>
+              ))}
+            </div>
+          </article>
+
+          <article className="glass-panel shimmer-border stitch-detail-card is-data">
+            <div className="stitch-detail-proximity">
+              <section>
+                <span>Proximity</span>
+                <strong>{place.distanceFromStationLabel || place.detourDistance || formatMeters(place.distance)} </strong>
+              </section>
+              <section>
+                <span>Travel</span>
+                <strong>{place.walkingTime || place.estimatedTime || 20}m</strong>
+              </section>
+            </div>
+            <div className="stitch-detail-signal">
+              <div>
+                <span>Signal Strength</span>
+                <strong>{rating > 0 ? `${rating.toFixed(1)} / 5` : "Verified"}</strong>
+              </div>
+              <i style={{ width: `${Math.min(100, Math.max(28, rating ? rating * 20 : 64))}%` }} />
+              <div>
+                <span>Today</span>
+                <strong>{place.todaysHours || place.openingHours || "Hours unconfirmed"}</strong>
+              </div>
+            </div>
+            <div className="stitch-detail-actions">
+              <button type="button" onClick={addToItinerary}>Add to Itinerary</button>
+              <a href={directionsUrl} target="_blank" rel="noopener noreferrer">Navigate</a>
+            </div>
+          </article>
+
+          <article className="glass-panel shimmer-border stitch-detail-card is-overlay">
+            <svg viewBox="0 0 1000 200" preserveAspectRatio="none" aria-hidden="true">
+              <path className="path-animate" d="M0,100 Q250,50 500,100 T1000,100" />
+              <path className="path-animate secondary" d="M0,120 Q300,170 600,120 T1000,120" />
+            </svg>
+            <div>
+              <h2>Intelligence Overlay</h2>
+              <p>Vector paths indicate practical access and route handoff. Use the external map for live navigation and terrain updates.</p>
+            </div>
+            <div className="stitch-detail-map-preview">
+              {staticMapUrl ? (
+                <img
+                  src={staticMapUrl}
+                  alt={`Map preview for ${place.name}`}
+                  onError={(event) => handlePlaceImageError(event, place)}
+                />
+              ) : (
+                <span>{formatCoordinates(place)}</span>
+              )}
+            </div>
+            <button type="button" onClick={sharePlace}><Share2 size={16} /> Share</button>
+            <button type="button" onClick={() => setView(routeState.results ? "results" : "routeDiscovery")}><Route size={16} /> View Route</button>
+          </article>
+        </section>
+      </section>
     </div>
   );
 }
 
-function LayoverDiscoveryPanel({ suggestions, onSelect }) {
+function LayoverDiscoveryPanel({ suggestions = [], layovers = [], onSelect }) {
+  const firstLayover = layovers[0];
+  const title = firstLayover
+    ? `${firstLayover.label || firstLayover.name || "Layover"}${firstLayover.arrivalTime && firstLayover.departureTime ? `, ${firstLayover.arrivalTime} - ${firstLayover.departureTime}` : ""}`
+    : "Add a layover to scan short-stop options";
+
   return (
     <section className="layover-discovery-panel wilderness-glass">
       <img src={stationNightUrl} alt="" />
       <div className="layover-panel-copy">
-        <SectionHeader eyebrow="Layover Discovery" title="Nuremberg Hbf, 03:00 - 07:00" compact />
-        <p>Prioritized by open-now status, short walking distance, practical safety, and realistic fit inside a 4-hour overnight window.</p>
+        <SectionHeader eyebrow="Layover Discovery" title={title} compact />
+        <p>
+          Layover recommendations are created only from route results with real place data. Add a layover,
+          run discovery, then OffTrail prioritizes open, walkable, time-fit options.
+        </p>
         <div className="layover-safety-tags">
           <span><CheckCircle size={14} /> Safe late-night</span>
           <span><Clock size={14} /> Open now first</span>
@@ -1964,10 +2688,15 @@ function LayoverDiscoveryPanel({ suggestions, onSelect }) {
         </div>
       </div>
       <div className="layover-suggestion-grid">
+        {!suggestions.length && (
+          <div className="layover-empty-state">
+            No layover places loaded yet. Add a layover in the planner and run discovery.
+          </div>
+        )}
         {suggestions.map((place) => (
           <button className="layover-suggestion" type="button" key={place.id} onClick={() => onSelect(place)}>
             <strong>{place.name}</strong>
-            <span>{place.distanceFromStationLabel} · {place.walkingTime} min walk</span>
+            <span>{place.distanceFromStationLabel} - {place.walkingTime} min walk</span>
             <StatusBadge open={place.isOpenAtArrival} is24Hours={place.is24Hours} />
           </button>
         ))}
@@ -2024,7 +2753,7 @@ function ResultsPage() {
       const data = await response.json();
       record.id = data.id || record.id;
     } catch {
-      // Local authenticated fallback keeps the UX complete in demo mode.
+      // Local authenticated fallback keeps the UX complete when persistence is not configured.
     } finally {
       setSaving(false);
     }
@@ -2046,7 +2775,7 @@ function ResultsPage() {
       <PageTopbar title="Route Results" />
       <aside className="results-summary liquid-glass-strong">
         <h2>{routeState.origin?.name || "Origin"} to {routeState.destination?.name || "Destination"}</h2>
-        <p>{results.route.distance} · {results.route.duration}</p>
+        <p>{results.route.distance} - {results.route.duration}</p>
         <div className="stat-grid">
           <Stat label="Spots found" value={results.total} />
           <Stat label="Added" value={selected.size} />
@@ -2060,20 +2789,29 @@ function ResultsPage() {
       <AnimatedRouteMap route={results.route} locations={results.locations} selected={selected} onSelectPlace={setSelectedPlace} variant="results" />
       <aside className="location-list discovered-locations-panel liquid-glass">
         <h2>Discovered locations</h2>
-        {results.locations.map((location) => (
-          <HiddenGemCard
-            key={location.id}
-            place={location}
-            selected={selected.has(location.id)}
-            saved={favorites.some((favorite) => favorite.id === location.id)}
-            onSelect={() => setSelectedPlace(location)}
-            onToggle={() => toggleLocation(location.id)}
-            onSave={() => {
-              setFavorites(toggleFavorite(favorites, location));
-              notify("Favorite updated.");
-            }}
+        {results.locations.length ? (
+          results.locations.map((location) => (
+            <HiddenGemCard
+              key={location.id}
+              place={location}
+              selected={selected.has(location.id)}
+              saved={favorites.some((favorite) => favorite.id === location.id)}
+              onSelect={() => setSelectedPlace(location)}
+              onToggle={() => toggleLocation(location.id)}
+              onSave={() => {
+                setFavorites(toggleFavorite(favorites, location));
+                notify("Favorite updated.");
+              }}
+            />
+          ))
+        ) : (
+          <DiscoveryStatePanel
+            type="empty"
+            message="No verified places came back for this route. Increase the radius, loosen filters, or try another corridor."
+            onRetry={() => setView("routeDiscovery")}
+            onNearby={() => setView("nearby")}
           />
-        ))}
+        )}
       </aside>
       <div className="bottom-action-bar">
         <button className="submit-route liquid-glass-strong" type="button" onClick={() => setView("itinerary")}>
@@ -2201,9 +2939,15 @@ function DashboardPage() {
         {savedRoutes.length === 0 && <EmptyState title="No saved routes yet" description="Your discovery archive will collect every route you save." action="Plan your first route" />}
         {savedRoutes.map((route) => (
           <article className="saved-route-card liquid-glass" key={route.id}>
-            <img src={route.thumbnail || thumbnailUrl} alt="" />
-            <h3>{route.origin?.name || "Origin"} → {route.destination?.name || "Destination"}</h3>
-            <p>{route.date} · {route.spotsFound} spots found</p>
+            <img
+              src={route.thumbnail || thumbnailUrl}
+              alt=""
+              onError={(event) => {
+                event.currentTarget.src = offTrailPlaceholderImage("Saved route", "Preview unavailable");
+              }}
+            />
+            <h3>{route.origin?.name || "Origin"} -&gt; {route.destination?.name || "Destination"}</h3>
+            <p>{route.date} - {route.spotsFound} spots found</p>
             <button className="mini-button liquid-glass" type="button" onClick={() => setView("routeDetail")}>View Route</button>
           </article>
         ))}
@@ -2221,9 +2965,9 @@ function FavoritesPage() {
         {favorites.length === 0 && <EmptyState title="No favorites yet" action="Back home" />}
         {favorites.map((location) => (
           <article className="saved-route-card liquid-glass" key={location.id}>
-            <img src={location.photos?.[0] || thumbnailUrl} alt={location.name} />
+            <img src={placeImageUrl(location)} alt={location.name} onError={(event) => handlePlaceImageError(event, location)} />
             <h3>{location.name}</h3>
-            <p>{location.category} · {location.detourDistance}</p>
+            <p>{location.category} - {location.detourDistance}</p>
           </article>
         ))}
       </div>
@@ -2371,10 +3115,10 @@ function LocationIntelligenceOverlay() {
     let cancelled = false;
 
     async function load() {
-      const position = await getBrowserPosition();
-      if (cancelled) return;
-      setUserLocation(position);
       try {
+        const position = await getBrowserPosition();
+        if (cancelled) return;
+        setUserLocation(position);
         const response = await fetch("/api/location-intelligence", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2392,8 +3136,9 @@ function LocationIntelligenceOverlay() {
           setUserLocation(data.userLocation || position);
         }
       } catch (error) {
-        notify("Location intelligence is using demo data.", "error");
-        if (!cancelled) setLocations(fallbackIntelligenceLocations(position));
+        console.warn("Location intelligence overlay error:", error);
+        notify("Could not load real nearby places. Please try again.", "error");
+        if (!cancelled) setLocations([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -2544,6 +3289,9 @@ function LocationIntelligenceOverlay() {
       >
         <div className="sheet-handle" aria-hidden="true" />
         <div className="intelligence-card-list">
+          {!loading && !pins.length && (
+            <div className="location-empty">No verified nearby places were returned for this scan.</div>
+          )}
           {pins.map((location) => (
             <article
               className={`intelligence-result-card glass-surface ${activeId === location.id ? "is-active" : ""}`}
@@ -2573,7 +3321,7 @@ function LocationIntelligenceOverlay() {
                   <MapPin size={14} />
                   <span>{formatMeters(location.distance)} away</span>
                   <Star size={14} />
-                  <span>{Number(location.rating || 4.6).toFixed(1)}</span>
+                  <span>{Number(location.rating || 0) > 0 ? Number(location.rating).toFixed(1) : "Unrated"}</span>
                 </div>
               </div>
             </article>
@@ -2620,7 +3368,7 @@ function AuthModal() {
   function continueWithGoogle() {
     setGoogleLoading(true);
     window.setTimeout(() => {
-      signIn({ id: "google-demo", email: "traveler@offtrail.demo", name: "Google Traveler" });
+      notify("Google OAuth is not configured yet. Use email sign-in for this local build.", "error");
       setGoogleLoading(false);
     }, 350);
   }
@@ -2730,7 +3478,15 @@ function TimelineItem({ time, title, duration, image, description }) {
       <time>{time}</time>
       <div className="timeline-dot" />
       <div className="timeline-card liquid-glass">
-        {image && <img src={image} alt="" />}
+        {image && (
+          <img
+            src={image}
+            alt=""
+            onError={(event) => {
+              event.currentTarget.src = offTrailPlaceholderImage(title, "Itinerary photo unavailable");
+            }}
+          />
+        )}
         <div>
           <h3>{title}</h3>
           {duration && <p>{duration}</p>}
@@ -2755,49 +3511,21 @@ function Toast({ message, tone, retryAction }) {
 }
 
 function getBrowserPosition() {
-  const fallback = { lat: 64.134, lng: -21.467 };
-  if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(fallback);
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return Promise.reject(new Error("Location access is unavailable in this browser. Enter a city or address instead."));
+  }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (position) =>
         resolve({
           lat: position.coords.latitude,
           lng: position.coords.longitude
         }),
-      () => resolve(fallback),
+      () => reject(new Error("Location permission is required, or enter a city or address instead.")),
       { enableHighAccuracy: false, timeout: 3200, maximumAge: 300000 }
     );
   });
-}
-
-function fallbackIntelligenceLocations(userLocation) {
-  return [
-    {
-      id: "fallback-obsidian",
-      name: "Obsidian Gorge",
-      type: "hidden_gem",
-      coordinates: { lat: userLocation.lat + 0.0108, lng: userLocation.lng - 0.0176 },
-      distance: 1200,
-      description: "Rare geological formation with deep teal water veins.",
-      photo: intelligencePreviewUrl,
-      rating: 4.8,
-      isOpen: true,
-      category: "nature"
-    },
-    {
-      id: "fallback-twilight",
-      name: "Twilight Crest",
-      type: "photo_op",
-      coordinates: { lat: userLocation.lat - 0.0162, lng: userLocation.lng + 0.0282 },
-      distance: 2800,
-      description: "Perfect elevation for celestial long-exposure shots.",
-      photo: galleryPhotos[0],
-      rating: 4.9,
-      isOpen: true,
-      category: "viewpoint"
-    }
-  ];
 }
 
 function locationPoint(location, userLocation, index) {
@@ -2839,32 +3567,112 @@ function formatMeters(value) {
 }
 
 function normalizeIntelligencePlace(location, index = 0) {
-  const distance = Number(location.distance || location.distanceFromStation || 1200 + index * 500);
+  const lat = location.coordinates?.lat ?? location.lat;
+  const lng = location.coordinates?.lng ?? location.lng;
+  const distance = Number(location.distance || location.distanceFromStation || 0);
+  const photo = location.photo || location.photos?.find((url) => /^https?:\/\//i.test(url)) || osmStaticMapPreview({ lat, lng });
+  const type = location.type || (location.category === "photo-op" ? "photo_op" : "nature");
   return {
     ...location,
-    lat: location.coordinates?.lat ?? location.lat,
-    lng: location.coordinates?.lng ?? location.lng,
-    photo: location.photo || location.photos?.[0] || galleryPhotos[index % galleryPhotos.length],
-    photos: location.photos || [location.photo || galleryPhotos[index % galleryPhotos.length]],
-    category: location.category || labelForType(location.type).toLowerCase(),
-    type: location.type || (location.category === "photo-op" ? "photo_op" : "hidden_gem"),
-    description: location.description || "A quiet nearby discovery with strong route fit.",
-    rating: location.rating || 4.6,
+    lat,
+    lng,
+    coordinates: location.coordinates || { lat, lng },
+    photo,
+    photos: location.photos?.length ? location.photos : [photo],
+    category: location.category || labelForType(type).toLowerCase(),
+    type,
+    description: location.description || "Verified map result near this scan area.",
+    rating: Number(location.rating || 0),
     distance,
     detourDistance: location.detourDistance || formatMeters(distance),
-    estimatedTime: location.estimatedTime || Math.max(20, Math.round(distance / 90)),
-    walkingTime: location.walkingTime || Math.max(4, Math.round(distance / 80)),
-    isOpenAtArrival: location.isOpenAtArrival ?? location.isOpen ?? true,
+    estimatedTime: location.estimatedTime || Math.max(10, Math.round((distance || 900) / 90)),
+    walkingTime: location.walkingTime || Math.max(2, Math.round((distance || 400) / 80)),
+    isOpenAtArrival: location.isOpenAtArrival ?? location.isOpen,
     safeForNighttime: location.safeForNighttime ?? distance <= 2500,
-    photoScore: location.photoScore || Math.min(99, 82 + index * 3),
-    bestTime: location.bestTime || (location.type === "photo_op" ? "Golden hour" : "Quiet morning"),
-    crowdLevel: location.crowdLevel || (index < 2 ? "Low" : "Moderate"),
-    tags: location.tags || [labelForType(location.type), formatMeters(distance), location.isOpen ? "Open now" : "Check hours"],
+    photoScore: location.photoScore || 0,
+    bestTime: location.bestTime || "Check current conditions",
+    crowdLevel: location.crowdLevel || "Unknown",
+    tags: location.tags || [labelForType(type), formatMeters(distance), location.isOpen ? "Open now" : "Check hours"],
     point: location.point || routeLocationPoint(location, index)
   };
 }
 
-function routeLocationPoint(location, index = 0) {
+function classifyDiscoveryError(message = "") {
+  if (/not found|spelling|uncharted|coordinate|location/i.test(message)) {
+    return { type: "coordinates", message };
+  }
+  if (/no verified|no hidden|no places|empty|zero/i.test(message)) {
+    return { type: "empty", message };
+  }
+  if (/not configured|routing|provider|api key|routes api|temporarily unavailable/i.test(message)) {
+    return { type: "system", message };
+  }
+  return { type: "system", message };
+}
+
+function friendlyDiscoveryMessage(error = {}, fallback = "") {
+  const message = error.message || "";
+  if (/ROUTING_NOT_CONFIGURED|GOOGLE_MAPS_API_KEY|OFFTRAIL_ALLOW|API key|provider|Routes API|not configured/i.test(message)) {
+    return "Verified route discovery is not configured yet. Add a Google Maps server key with Routes and Places enabled, then retry.";
+  }
+  if (error.type === "coordinates") {
+    return message || "That location could not be verified. Check the spelling or try a nearby station, landmark, or city center.";
+  }
+  if (error.type === "empty") {
+    return message || "No verified hidden gems came back for this route yet. Increase the radius, loosen filters, or try a nearby route.";
+  }
+  return message || fallback;
+}
+
+function scanStageLabel(stage = "idle") {
+  const labels = {
+    idle: "Awaiting Scan",
+    geocoding: "Resolving Coordinates",
+    routing: "Scanning Route Corridor",
+    places: "Reading Live Gem Signals",
+    complete: "Route Verified",
+    empty: "No Echoes Detected",
+    error: "Signal Interrupted"
+  };
+  return labels[stage] || labels.idle;
+}
+
+function scanStageHeadline(stage = "idle") {
+  const headlines = {
+    idle: "Ready to scan",
+    geocoding: "Locking onto real coordinates",
+    routing: "Tracing verified terrain",
+    places: "Revealing real nearby places",
+    complete: "Discovery corridor ready",
+    empty: "The path is quiet",
+    error: "Scan stopped safely"
+  };
+  return headlines[stage] || headlines.idle;
+}
+
+function formatMapCoordinate(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "NO VERIFIED COORDINATES";
+  return `LAT ${lat.toFixed(4)} // LON ${lng.toFixed(4)}`;
+}
+
+function osmStaticMapPreview(point) {
+  if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return thumbnailUrl;
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${point.lat},${point.lng}&zoom=15&size=640x360&markers=${point.lat},${point.lng},red-pushpin`;
+}
+
+function routeLocationPoint(location, index = 0, bounds = null, routePath = []) {
+  const coordinates = placeCoordinates(location);
+  if (bounds && Number.isFinite(coordinates.lat) && Number.isFinite(coordinates.lng)) {
+    const point = toPercent(coordinates, bounds);
+    const routeAnchor = closestRoutePoint(coordinates, routePath);
+    const anchor = routeAnchor ? toPercent(routeAnchor, bounds) : { x: point.x, y: point.y };
+    return {
+      x: clamp(point.x, 14, 86),
+      y: clamp(point.y, 14, 86),
+      routeX: clamp(anchor.x, 8, 92),
+      routeY: clamp(anchor.y, 8, 92)
+    };
+  }
   if (location.point) return location.point;
   const points = [
     { x: 31, y: 54, routeX: 28, routeY: 57 },
@@ -2881,6 +3689,32 @@ function routeLocationPoint(location, index = 0) {
   return points[index % points.length];
 }
 
+function routePathData(path = [], bounds = null) {
+  if (!bounds || !Array.isArray(path) || path.length < 2) {
+    return "M 10 78 C 27 72 32 34 51 38 S 72 78 88 18";
+  }
+  return path
+    .map(([lat, lng], index) => {
+      const point = toPercent({ lat, lng }, bounds);
+      return `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+    })
+    .join(" ");
+}
+
+function closestRoutePoint(point, routePath = []) {
+  if (!Array.isArray(routePath) || !routePath.length) return null;
+  let best = null;
+  let bestDistance = Infinity;
+  for (const [lat, lng] of routePath) {
+    const distance = Math.hypot(point.lat - lat, point.lng - lng);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = { lat, lng };
+    }
+  }
+  return best;
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -2895,6 +3729,8 @@ function syncUrl(snapshot, mode = "push") {
     url.searchParams.set("menu", "main");
   } else if (snapshot.view === "content") {
     url.searchParams.set("page", snapshot.contentPage || "how");
+  } else if (snapshot.view && snapshot.view !== "home") {
+    url.searchParams.set("view", snapshot.view);
   }
   const method = mode === "replace" ? "replaceState" : "pushState";
   window.history[method]({ offtrail: true }, "", `${url.pathname}${url.search}${url.hash}`);
@@ -2905,10 +3741,13 @@ function parseUrlState() {
   const params = new URLSearchParams(window.location.search);
   const modalParam = params.get("modal");
   const pageParam = params.get("page");
+  const viewParam = params.get("view");
+  const allowedViews = new Set(["home", "routeDiscovery", "nearby", "results", "itinerary", "dashboard", "favorites", "profile", "routeDetail", "error"]);
   return {
     modal: modalParam ? modalFromUrlMap[modalParam] || null : null,
     menuOpen: params.get("menu") === "main",
-    contentPage: pageParam && pageContent[pageParam] ? pageParam : null
+    contentPage: pageParam && pageContent[pageParam] ? pageParam : null,
+    view: viewParam && allowedViews.has(viewParam) ? viewParam : null
   };
 }
 

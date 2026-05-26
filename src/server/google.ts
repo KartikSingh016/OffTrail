@@ -25,6 +25,26 @@ const GOOGLE_INCLUDED_TYPES = [
   "church"
 ];
 
+const GOOGLE_TYPES_BY_PREFERENCE: Record<string, string[]> = {
+  nature: ["park", "tourist_attraction"],
+  park: ["park"],
+  garden: ["park", "tourist_attraction"],
+  viewpoint: ["tourist_attraction", "park"],
+  viewpoints: ["tourist_attraction", "park"],
+  "photo-op": ["tourist_attraction", "art_gallery", "museum"],
+  photo_ops: ["tourist_attraction", "art_gallery", "museum"],
+  photo_locations: ["tourist_attraction", "art_gallery", "museum"],
+  cafe: ["cafe", "bakery"],
+  cafes: ["cafe", "bakery"],
+  food: ["restaurant", "cafe", "bakery", "bar"],
+  culture: ["museum", "art_gallery", "church", "tourist_attraction"],
+  historical: ["museum", "church", "tourist_attraction"],
+  hidden: ["park", "tourist_attraction", "art_gallery"],
+  hidden_gems: ["park", "tourist_attraction", "art_gallery"],
+  local: ["restaurant", "cafe", "bar"],
+  local_favorites: ["restaurant", "cafe", "bar"]
+};
+
 type GoogleRouteResponse = {
   routes?: Array<{
     distanceMeters?: number;
@@ -98,59 +118,64 @@ export async function calculateRoute(input: DiscoverRequest): Promise<RouteSumma
   const destination = { lat: input.destinationLat, lng: input.destinationLng };
 
   if (!serverEnv.googleMapsApiKey) {
-    const fallback = createFallbackRoute(origin, destination, input.layovers || []);
-    routeCache.set(key, fallback);
-    return fallback;
-  }
-
-  try {
-    const response = await fetchJson<GoogleRouteResponse>(
-      "https://routes.googleapis.com/directions/v2:computeRoutes",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": serverEnv.googleMapsApiKey,
-          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline"
-        },
-        body: JSON.stringify({
-          origin: { location: { latLng: toGoogleLatLng(origin) } },
-          destination: { location: { latLng: toGoogleLatLng(destination) } },
-          intermediates: (input.layovers || []).map((layover) => ({
-            location: { latLng: toGoogleLatLng(layover) }
-          })),
-          travelMode: "DRIVE",
-          routingPreference: "TRAFFIC_AWARE",
-          computeAlternativeRoutes: false,
-          polylineQuality: "HIGH_QUALITY",
-          polylineEncoding: "ENCODED_POLYLINE"
-        })
-      },
-      "Google Routes API"
+    if (serverEnv.allowEstimatedRoutes) {
+      const fallback = createFallbackRoute(origin, destination, input.layovers || []);
+      routeCache.set(key, fallback);
+      return fallback;
+    }
+    throw new HttpError(
+      "Google Routes API is required to calculate a safe route. Add GOOGLE_MAPS_API_KEY or set OFFTRAIL_ALLOW_ESTIMATED_ROUTES=true for local demos only.",
+      503,
+      "Missing GOOGLE_MAPS_API_KEY"
     );
-
-    const route = response.routes?.[0];
-    const encoded = route?.polyline?.encodedPolyline;
-    const path = encoded ? decodeGooglePolyline(encoded) : directFallbackPath(origin, destination);
-    const distanceMeters = route?.distanceMeters || routeDistanceMeters(path);
-    const durationSeconds = parseGoogleDuration(route?.duration) || Math.round((distanceMeters / 80000) * 3600);
-    const summary = {
-      path: path.map((point) => [point.lat, point.lng] as [number, number]),
-      distance: formatDistance(distanceMeters),
-      duration: formatDuration(durationSeconds),
-      distanceMeters,
-      durationSeconds
-    };
-    routeCache.set(key, summary);
-    return summary;
-  } catch {
-    const fallback = createFallbackRoute(origin, destination, input.layovers || []);
-    routeCache.set(key, fallback);
-    return fallback;
   }
+
+  const response = await fetchJson<GoogleRouteResponse>(
+    "https://routes.googleapis.com/directions/v2:computeRoutes",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": serverEnv.googleMapsApiKey,
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline"
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: toGoogleLatLng(origin) } },
+        destination: { location: { latLng: toGoogleLatLng(destination) } },
+        intermediates: (input.layovers || []).map((layover) => ({
+          location: { latLng: toGoogleLatLng(layover) }
+        })),
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_AWARE",
+        computeAlternativeRoutes: false,
+        polylineQuality: "HIGH_QUALITY",
+        polylineEncoding: "ENCODED_POLYLINE"
+      })
+    },
+    "Google Routes API"
+  );
+
+  const route = response.routes?.[0];
+  const encoded = route?.polyline?.encodedPolyline;
+  if (!route || !encoded) {
+    throw new HttpError("No route found between the selected locations.", 422, "No route returned by Google Routes API");
+  }
+
+  const path = decodeGooglePolyline(encoded);
+  const distanceMeters = route.distanceMeters || routeDistanceMeters(path);
+  const durationSeconds = parseGoogleDuration(route.duration) || Math.round((distanceMeters / 80000) * 3600);
+  const summary = {
+    path: path.map((point) => [point.lat, point.lng] as [number, number]),
+    distance: formatDistance(distanceMeters),
+    duration: formatDuration(durationSeconds),
+    distanceMeters,
+    durationSeconds
+  };
+  routeCache.set(key, summary);
+  return summary;
 }
 
-export async function searchGooglePlaces(center: LatLng, radiusKm: number): Promise<PlaceCandidate[]> {
+export async function searchGooglePlaces(center: LatLng, radiusKm: number, preferences: string[] = []): Promise<PlaceCandidate[]> {
   if (!serverEnv.googleMapsApiKey) return [];
 
   const response = await fetchJson<GooglePlacesResponse>(
@@ -164,7 +189,7 @@ export async function searchGooglePlaces(center: LatLng, radiusKm: number): Prom
           "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.photos,places.types,places.regularOpeningHours"
       },
       body: JSON.stringify({
-        includedTypes: GOOGLE_INCLUDED_TYPES,
+        includedTypes: getGoogleTypesFromPreferences(preferences),
         maxResultCount: 20,
         locationRestriction: {
           circle: {
@@ -178,6 +203,15 @@ export async function searchGooglePlaces(center: LatLng, radiusKm: number): Prom
   );
 
   return (response.places || []).flatMap(mapGooglePlace);
+}
+
+function getGoogleTypesFromPreferences(preferences: string[]) {
+  const types = preferences.flatMap((preference) => {
+    const key = preference.trim().toLowerCase();
+    return GOOGLE_TYPES_BY_PREFERENCE[key] || [];
+  });
+  const unique = Array.from(new Set(types));
+  return unique.length ? unique.slice(0, 20) : GOOGLE_INCLUDED_TYPES;
 }
 
 export async function fetchGooglePlaceDetail(placeId: string) {

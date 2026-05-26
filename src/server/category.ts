@@ -11,9 +11,13 @@ const CATEGORY_WEIGHTS: Record<string, number> = {
 };
 
 const GOOGLE_CATEGORY_MAP: Array<[string[], string]> = [
+  [["viewpoint"], "viewpoint"],
+  [["garden"], "garden"],
   [["park", "natural_feature"], "nature"],
+  [["nature_reserve", "wood", "water", "peak", "cliff", "beach"], "nature"],
   [["tourist_attraction", "point_of_interest"], "photo-op"],
   [["museum", "art_gallery"], "culture"],
+  [["gallery", "artwork", "historic", "monument", "castle", "wayside_cross"], "culture"],
   [["cafe", "bakery"], "cafe"],
   [["restaurant", "bar"], "food"],
   [["church", "hindu_temple", "mosque", "synagogue"], "culture"],
@@ -41,7 +45,7 @@ export function normalizeCategory(types: string[], name = "") {
     }
   }
 
-  return "hidden";
+  return "culture";
 }
 
 export function categoryWeight(category: string) {

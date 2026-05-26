@@ -6,6 +6,8 @@ import { validateDiscoverRequest, ValidationError } from "../../src/server/valid
 
 type ErrorResponse = {
   error: string;
+  code?: string;
+  needsConfiguration?: boolean;
 };
 
 export default async function handler(
@@ -26,9 +28,60 @@ export default async function handler(
       return res.status(error.status).json({ error: error.message });
     }
 
-    const message = error instanceof Error ? error.message : "Discovery failed.";
-    return res.status(500).json({ error: message });
+    const publicError = toPublicDiscoveryError(error);
+    return res.status(publicError.status).json(publicError.body);
   }
+}
+
+function toPublicDiscoveryError(error: unknown): { status: number; body: ErrorResponse } {
+  const rawMessage = error instanceof Error ? error.message : "Discovery failed.";
+  const status =
+    error instanceof Error &&
+    "status" in error &&
+    typeof error.status === "number" &&
+    error.status >= 400 &&
+    error.status < 600
+      ? error.status
+      : 500;
+
+  if (/GOOGLE_MAPS_API_KEY|Routes API|API key|Missing GOOGLE/i.test(rawMessage)) {
+    return {
+      status: 503,
+      body: {
+        error: "Verified route discovery is not configured yet. Add a Google Maps server key with Routes and Places enabled, then retry.",
+        code: "ROUTING_NOT_CONFIGURED",
+        needsConfiguration: true
+      }
+    };
+  }
+
+  if (/No route found/i.test(rawMessage)) {
+    return {
+      status: 422,
+      body: {
+        error: "No verified route was found between those locations. Check the route, spelling, and travel mode, then try again.",
+        code: "NO_ROUTE_FOUND"
+      }
+    };
+  }
+
+  if (/Location not found|spelling|coordinate/i.test(rawMessage)) {
+    return {
+      status: status === 500 ? 404 : status,
+      body: {
+        error: rawMessage,
+        code: "LOCATION_NOT_FOUND"
+      }
+    };
+  }
+
+  return {
+    status,
+    body: {
+      error: "Route discovery could not complete with verified data. Please retry, or try a nearby city or landmark.",
+      code: "DISCOVERY_FAILED"
+    }
+  };
 }
 
 async function normalizeDiscoverBody(body: unknown) {

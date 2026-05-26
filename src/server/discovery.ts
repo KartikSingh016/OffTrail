@@ -1,6 +1,7 @@
 import { hiddenGemScore, isHiddenGem } from "./category";
 import { searchFoursquarePlaces } from "./foursquare";
 import { calculateRoute, searchGooglePlaces } from "./google";
+import { searchNominatimPlaces, searchOsmPlaces } from "./osm";
 import {
   distanceToRouteMeters,
   formatDistance,
@@ -10,7 +11,6 @@ import {
 } from "./geo";
 import { createRateLimiter } from "./rateLimit";
 import { enhanceLocations } from "./ai";
-import { generateDemoPlaces, generateLayoverDemoPlaces } from "./demoPlaces";
 import type { DiscoverRequest, DiscoverResponse, LatLng, LocationResult, PlaceCandidate, TimeOfDay } from "./types";
 
 const googleLimiter = createRateLimiter(10, 1000);
@@ -22,12 +22,12 @@ export async function discover(input: DiscoverRequest): Promise<DiscoverResponse
   const route = await calculateRoute(input);
   const routeWithTime = addRouteTimeSegments(route, input);
   const routePoints = route.path.map(([lat, lng]) => ({ lat, lng }));
-  const searchPoints = interpolateRoute(routePoints, 2500);
+  const searchPoints = interpolateRoute(routePoints, 5000, 40);
 
   const searchResults = await Promise.allSettled(
     searchPoints.map(async (point) => {
       const [google, foursquare] = await Promise.allSettled([
-        googleLimiter(() => searchGooglePlaces(point, radiusKm)),
+        googleLimiter(() => searchGooglePlaces(point, radiusKm, filters)),
         foursquareLimiter(() => searchFoursquarePlaces(point, radiusKm))
       ]);
 
@@ -41,8 +41,8 @@ export async function discover(input: DiscoverRequest): Promise<DiscoverResponse
   const discovered = searchResults.flatMap((result) =>
     result.status === "fulfilled" ? result.value : []
   );
-  const demoCandidates = [...generateDemoPlaces(routePoints), ...generateLayoverDemoPlaces(input.layovers || [])];
-  const candidates = discovered.length ? discovered : demoCandidates;
+  const osmCandidates = discovered.length ? [] : await searchRealOsmCorridor(routePoints, radiusKm, filters, input);
+  const candidates = discovered.length ? discovered : osmCandidates;
 
   const deduped = dedupeLocations(candidates);
   const scored = deduped.map((location) => scoreLocation(location, routePoints));
@@ -164,10 +164,43 @@ function normalizeName(name: string) {
 }
 
 function normalizeFilters(filters: string[]) {
+  const aliases: Record<string, string> = {
+    photo: "photo-op",
+    photos: "photo-op",
+    photo_ops: "photo-op",
+    photo_locations: "photo-op",
+    "photo locations": "photo-op",
+    hidden_gems: "hidden",
+    "hidden gems": "hidden",
+    hidden_spots: "hidden",
+    "hidden spots": "hidden",
+    cafes: "cafe",
+    local_favorites: "local",
+    "local favorites": "local",
+    viewpoints: "viewpoint",
+    historical: "culture",
+    history: "culture"
+  };
+
   return filters
     .map((filter) => filter.trim().toLowerCase())
     .filter(Boolean)
-    .map((filter) => (filter === "viewpoints" ? "viewpoint" : filter));
+    .map((filter) => aliases[filter] || filter);
+}
+
+async function searchRealOsmCorridor(routePoints: LatLng[], radiusKm: number, filters: string[], input: DiscoverRequest) {
+  const searchPoints = interpolateRoute(routePoints, 35000, 5);
+  const results = await Promise.allSettled(
+    searchPoints.map((point) => searchOsmPlaces(point, radiusKm, filters))
+  );
+  const overpass = results.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+  if (overpass.length) return overpass;
+
+  const named = await Promise.allSettled([
+    searchNominatimPlaces(input.origin, filters, { lat: input.originLat, lng: input.originLng }),
+    searchNominatimPlaces(input.destination, filters, { lat: input.destinationLat, lng: input.destinationLng })
+  ]);
+  return named.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
 }
 
 function stripInternalFields(location: PlaceCandidate): LocationResult {

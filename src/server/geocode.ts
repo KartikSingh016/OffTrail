@@ -8,18 +8,9 @@ export type PlaceSuggestion = LatLng & {
   name: string;
 };
 
-const SAMPLE_PLACES: PlaceSuggestion[] = [
-  { id: "demo-paris", name: "Paris", label: "Paris, France", lat: 48.8566, lng: 2.3522 },
-  { id: "demo-lyon", name: "Lyon", label: "Lyon, France", lat: 45.764, lng: 4.8357 },
-  { id: "demo-munich", name: "Munich", label: "Munich, Germany", lat: 48.1351, lng: 11.582 },
-  { id: "demo-berlin", name: "Berlin", label: "Berlin, Germany", lat: 52.52, lng: 13.405 },
-  { id: "demo-zurich", name: "Zurich", label: "Zurich, Switzerland", lat: 47.3769, lng: 8.5417 },
-  { id: "demo-vienna", name: "Vienna", label: "Vienna, Austria", lat: 48.2082, lng: 16.3738 },
-  { id: "demo-prague", name: "Prague", label: "Prague, Czechia", lat: 50.0755, lng: 14.4378 },
-  { id: "demo-amsterdam", name: "Amsterdam", label: "Amsterdam, Netherlands", lat: 52.3676, lng: 4.9041 },
-  { id: "demo-bruges", name: "Bruges", label: "Bruges, Belgium", lat: 51.2093, lng: 3.2247 },
-  { id: "demo-florence", name: "Florence", label: "Florence, Italy", lat: 43.7696, lng: 11.2558 }
-];
+export class GeocodeError extends Error {
+  status = 404;
+}
 
 type GoogleAutocompleteResponse = {
   suggestions?: Array<{
@@ -41,6 +32,7 @@ type GoogleGeocodeResponse = {
   results?: Array<{
     place_id?: string;
     formatted_address?: string;
+    partial_match?: boolean;
     geometry?: {
       location?: {
         lat?: number;
@@ -60,15 +52,17 @@ type NominatimResponse = Array<{
   lat?: string;
   lon?: string;
   name?: string;
+  class?: string;
+  type?: string;
+  addresstype?: string;
+  importance?: number;
 }>;
 
 export async function autocompletePlaces(query: string) {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  if (!serverEnv.googleMapsApiKey) {
-    return sampleAutocomplete(trimmed);
-  }
+  if (!serverEnv.googleMapsApiKey) return autocompleteWithNominatim(trimmed);
 
   try {
     const response = await fetchJson<GoogleAutocompleteResponse>(
@@ -98,7 +92,7 @@ export async function autocompletePlaces(query: string) {
       }))
       .filter((item) => item.id && item.label);
   } catch {
-    return sampleAutocomplete(trimmed);
+    return autocompleteWithNominatim(trimmed);
   }
 }
 
@@ -114,11 +108,10 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
     };
   }
 
-  const sample = sampleAutocomplete(query)[0];
   if (!serverEnv.googleMapsApiKey) {
-    if (sample) return sample;
     const nominatim = await geocodeWithNominatim(query);
-    return nominatim || approximatePlace(query);
+    if (nominatim) return nominatim;
+    throw new GeocodeError(`Location not found: "${query}". Check the spelling or choose a suggestion.`);
   }
 
   try {
@@ -128,7 +121,7 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
     const response = await fetchJson<GoogleGeocodeResponse>(url.toString(), {}, "Google Geocoding");
     const result = response.results?.[0];
     const location = result?.geometry?.location;
-    if (!result || typeof location?.lat !== "number" || typeof location.lng !== "number") {
+    if (!result || result.partial_match || typeof location?.lat !== "number" || typeof location.lng !== "number") {
       throw new Error("Location not found.");
     }
     return {
@@ -142,19 +135,10 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
       lng: location.lng
     };
   } catch {
-    if (sample) return sample;
     const nominatim = await geocodeWithNominatim(query);
-    return nominatim || approximatePlace(query);
+    if (nominatim) return nominatim;
+    throw new GeocodeError(`Location not found: "${query}". Check the spelling or choose a suggestion.`);
   }
-}
-
-function sampleAutocomplete(query: string) {
-  const normalized = query.toLowerCase();
-  return SAMPLE_PLACES.filter(
-    (place) =>
-      place.name.toLowerCase().includes(normalized) ||
-      place.label.toLowerCase().includes(normalized)
-  ).slice(0, 6);
 }
 
 function parseCoordinates(value: string) {
@@ -165,6 +149,41 @@ function parseCoordinates(value: string) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
   return { lat, lng };
+}
+
+async function autocompleteWithNominatim(query: string): Promise<PlaceSuggestion[]> {
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("limit", "6");
+    url.searchParams.set("q", query);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "OffTrail route discovery"
+      }
+    });
+    if (!response.ok) return [];
+    const data = (await response.json()) as NominatimResponse;
+    return data.flatMap((result) => {
+      const lat = Number(result.lat);
+      const lng = Number(result.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+      if (!isConfidentNominatimResult(query, result)) return [];
+      return [
+        {
+          id: result.place_id ? `osm:${result.place_id}` : `osm:${lat},${lng}`,
+          name: result.name || firstDisplayNamePart(result.display_name || query),
+          label: result.display_name || result.name || query,
+          lat,
+          lng
+        }
+      ];
+    });
+  } catch {
+    return [];
+  }
 }
 
 async function geocodeWithNominatim(query: string): Promise<PlaceSuggestion | null> {
@@ -186,6 +205,7 @@ async function geocodeWithNominatim(query: string): Promise<PlaceSuggestion | nu
     const lat = Number(result?.lat);
     const lng = Number(result?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (!result || !isConfidentNominatimResult(query, result)) return null;
 
     return {
       id: result.place_id ? `osm:${result.place_id}` : `osm:${query}`,
@@ -199,19 +219,29 @@ async function geocodeWithNominatim(query: string): Promise<PlaceSuggestion | nu
   }
 }
 
-function approximatePlace(query: string): PlaceSuggestion {
-  const hash = Array.from(query.trim().toLowerCase()).reduce(
-    (total, character) => (total * 31 + character.charCodeAt(0)) >>> 0,
-    17
-  );
-  const lat = -55 + (hash % 13000) / 100;
-  const lng = -170 + ((hash >>> 8) % 34000) / 100;
-  const name = query.trim();
-  return {
-    id: `approx:${hash}`,
-    name,
-    label: `${name} (approximate)`,
-    lat: Number(lat.toFixed(5)),
-    lng: Number(lng.toFixed(5))
-  };
+function isConfidentNominatimResult(query: string, result: NominatimResponse[number]) {
+  const normalizedQuery = normalizeText(query);
+  const display = normalizeText(`${result.name || ""} ${result.display_name || ""}`);
+  const tokens = normalizedQuery.split(" ").filter((token) => token.length > 2);
+  const matchedTokens = tokens.filter((token) => display.includes(token));
+  const importance = typeof result.importance === "number" ? result.importance : 0;
+  const kind = [result.class, result.type, result.addresstype].filter(Boolean).join(" ").toLowerCase();
+  const acceptedKinds = /\b(place|boundary|city|town|village|hamlet|suburb|neighbourhood|state|county|municipality|railway|station|airport|amenity|tourism|leisure|natural|historic|building|road)\b/;
+
+  if (!acceptedKinds.test(kind)) return false;
+  if (tokens.length && matchedTokens.length / tokens.length < 0.6) return false;
+  return importance >= 0.05 || matchedTokens.length > 0;
+}
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function firstDisplayNamePart(displayName: string) {
+  return displayName.split(",")[0]?.trim() || "";
 }
