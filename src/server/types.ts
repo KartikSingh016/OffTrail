@@ -97,10 +97,13 @@ export type LocationResult = {
   distanceFromStationLabel?: string;
   walkingTime?: number;
   safeForNighttime?: boolean;
+  provider?: "google" | "foursquare" | "osm";
+  source?: string;
+  sourceIds?: string[];
 };
 
 export type PlaceCandidate = LocationResult & {
-  provider: "google" | "foursquare";
+  provider: "google" | "foursquare" | "osm";
   sourceIds: string[];
   rawCategories: string[];
   detourMeters: number;

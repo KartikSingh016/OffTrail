@@ -235,7 +235,10 @@ function stripInternalFields(location: PlaceCandidate): LocationResult {
     distanceFromStation: location.distanceFromStation,
     distanceFromStationLabel: location.distanceFromStationLabel,
     walkingTime: location.walkingTime,
-    safeForNighttime: location.safeForNighttime
+    safeForNighttime: location.safeForNighttime,
+    provider: location.provider,
+    source: location.provider === "google" ? "Google Maps" : location.provider === "foursquare" ? "Foursquare" : "OSM",
+    sourceIds: location.sourceIds
   };
 }
 
