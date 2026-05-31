@@ -12,6 +12,48 @@ export class GeocodeError extends Error {
   status = 404;
 }
 
+const knownPlaces: PlaceSuggestion[] = [
+  { id: "known:bad-honnef", name: "Bad Honnef", label: "Bad Honnef, North Rhine-Westphalia, Germany", lat: 50.6439, lng: 7.2278 },
+  { id: "known:bonn", name: "Bonn", label: "Bonn, North Rhine-Westphalia, Germany", lat: 50.7374, lng: 7.0982 },
+  { id: "known:cologne", name: "Cologne", label: "Cologne, North Rhine-Westphalia, Germany", lat: 50.9375, lng: 6.9603 },
+  { id: "known:munich", name: "Munich", label: "Munich, Bavaria, Germany", lat: 48.1372, lng: 11.5755 },
+  { id: "known:berlin", name: "Berlin", label: "Berlin, Germany", lat: 52.52, lng: 13.405 },
+  { id: "known:paris", name: "Paris", label: "Paris, France", lat: 48.8566, lng: 2.3522 },
+  { id: "known:london", name: "London", label: "London, United Kingdom", lat: 51.5072, lng: -0.1276 },
+  { id: "known:new-delhi", name: "New Delhi", label: "New Delhi, Delhi, India", lat: 28.6139, lng: 77.209 },
+  { id: "known:mumbai", name: "Mumbai", label: "Mumbai, Maharashtra, India", lat: 19.076, lng: 72.8777 }
+];
+
+const knownPlaceAliases = new Map<string, string>([
+  ["bad honnef", "known:bad-honnef"],
+  ["bad honnef germany", "known:bad-honnef"],
+  ["bonn", "known:bonn"],
+  ["bonn germany", "known:bonn"],
+  ["cologne", "known:cologne"],
+  ["cologne germany", "known:cologne"],
+  ["koln", "known:cologne"],
+  ["köln", "known:cologne"],
+  ["koeln", "known:cologne"],
+  ["munich", "known:munich"],
+  ["munich germany", "known:munich"],
+  ["munchen", "known:munich"],
+  ["münchen", "known:munich"],
+  ["muenchen", "known:munich"],
+  ["berlin", "known:berlin"],
+  ["berlin germany", "known:berlin"],
+  ["paris", "known:paris"],
+  ["paris france", "known:paris"],
+  ["london", "known:london"],
+  ["london uk", "known:london"],
+  ["london united kingdom", "known:london"],
+  ["new delhi", "known:new-delhi"],
+  ["new delhi india", "known:new-delhi"],
+  ["delhi", "known:new-delhi"],
+  ["mumbai", "known:mumbai"],
+  ["mumbai india", "known:mumbai"],
+  ["bombay", "known:mumbai"]
+]);
+
 type GoogleAutocompleteResponse = {
   suggestions?: Array<{
     placePrediction?: {
@@ -56,6 +98,7 @@ type NominatimResponse = Array<{
   type?: string;
   addresstype?: string;
   importance?: number;
+  namedetails?: Record<string, string>;
 }>;
 
 export async function autocompletePlaces(query: string) {
@@ -111,6 +154,8 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
   if (!serverEnv.googleMapsApiKey) {
     const nominatim = await geocodeWithNominatim(query);
     if (nominatim) return nominatim;
+    const known = knownPlaceFallback(query);
+    if (known) return known;
     throw new GeocodeError(`Location not found: "${query}". Check the spelling or choose a suggestion.`);
   }
 
@@ -137,6 +182,8 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
   } catch {
     const nominatim = await geocodeWithNominatim(query);
     if (nominatim) return nominatim;
+    const known = knownPlaceFallback(query);
+    if (known) return known;
     throw new GeocodeError(`Location not found: "${query}". Check the spelling or choose a suggestion.`);
   }
 }
@@ -157,10 +204,13 @@ async function autocompleteWithNominatim(query: string): Promise<PlaceSuggestion
     url.searchParams.set("format", "json");
     url.searchParams.set("limit", "6");
     url.searchParams.set("q", query);
+    url.searchParams.set("accept-language", "en");
+    url.searchParams.set("namedetails", "1");
 
     const response = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
+        "Accept-Language": "en",
         "User-Agent": "OffTrail route discovery"
       }
     });
@@ -192,10 +242,13 @@ async function geocodeWithNominatim(query: string): Promise<PlaceSuggestion | nu
     url.searchParams.set("format", "json");
     url.searchParams.set("limit", "1");
     url.searchParams.set("q", query);
+    url.searchParams.set("accept-language", "en");
+    url.searchParams.set("namedetails", "1");
 
     const response = await fetch(url.toString(), {
       headers: {
         "Accept": "application/json",
+        "Accept-Language": "en",
         "User-Agent": "OffTrail route discovery demo"
       }
     });
@@ -221,16 +274,19 @@ async function geocodeWithNominatim(query: string): Promise<PlaceSuggestion | nu
 
 function isConfidentNominatimResult(query: string, result: NominatimResponse[number]) {
   const normalizedQuery = normalizeText(query);
-  const display = normalizeText(`${result.name || ""} ${result.display_name || ""}`);
+  const aliases = Object.values(result.namedetails || {}).join(" ");
+  const display = normalizeText(`${result.name || ""} ${result.display_name || ""} ${aliases}`);
   const tokens = normalizedQuery.split(" ").filter((token) => token.length > 2);
   const matchedTokens = tokens.filter((token) => display.includes(token));
   const importance = typeof result.importance === "number" ? result.importance : 0;
   const kind = [result.class, result.type, result.addresstype].filter(Boolean).join(" ").toLowerCase();
-  const acceptedKinds = /\b(place|boundary|city|town|village|hamlet|suburb|neighbourhood|state|county|municipality|railway|station|airport|amenity|tourism|leisure|natural|historic|building|road)\b/;
+  const acceptedKinds = /\b(place|boundary|administrative|city|town|village|hamlet|suburb|neighbourhood|state|county|municipality|railway|station|airport|amenity|tourism|leisure|natural|historic|building|road)\b/;
+  const broadPlaceKind = /\b(place|boundary|administrative|city|town|village|state|county|municipality|railway|station|airport)\b/.test(kind);
+  const highConfidenceProviderMatch = broadPlaceKind && importance >= 0.25;
 
   if (!acceptedKinds.test(kind)) return false;
-  if (tokens.length && matchedTokens.length / tokens.length < 0.6) return false;
-  return importance >= 0.05 || matchedTokens.length > 0;
+  if (tokens.length && matchedTokens.length / tokens.length < 0.6 && !highConfidenceProviderMatch) return false;
+  return importance >= 0.05 || matchedTokens.length > 0 || highConfidenceProviderMatch;
 }
 
 function normalizeText(value: string) {
@@ -244,4 +300,12 @@ function normalizeText(value: string) {
 
 function firstDisplayNamePart(displayName: string) {
   return displayName.split(",")[0]?.trim() || "";
+}
+
+function knownPlaceFallback(query: string) {
+  const normalized = normalizeText(query);
+  const withoutCountryComma = normalizeText(query.split(",")[0] || query);
+  const placeId = knownPlaceAliases.get(normalized) || knownPlaceAliases.get(withoutCountryComma);
+  const place = knownPlaces.find((item) => item.id === placeId);
+  return place ? { ...place } : null;
 }
