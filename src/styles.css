@@ -7482,6 +7482,9 @@ img {
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.03em;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .stitch-navlinks {
@@ -7490,7 +7493,8 @@ img {
   gap: 2rem;
 }
 
-.stitch-navlinks button {
+.stitch-navlinks button,
+.stitch-navlinks a {
   color: #c2c8c5;
   font-size: 0.75rem;
   font-weight: 700;
@@ -7499,10 +7503,13 @@ img {
   padding: 0.55rem 0;
   border-bottom: 2px solid transparent;
   transition: color 240ms ease, border-color 240ms ease;
+  text-decoration: none;
 }
 
 .stitch-navlinks button:hover,
-.stitch-navlinks button.is-active {
+.stitch-navlinks button.is-active,
+.stitch-navlinks a:hover,
+.stitch-navlinks a.is-active {
   color: #b4cbc6;
   border-color: #b4cbc6;
 }
@@ -7982,7 +7989,7 @@ img {
   background:
     radial-gradient(circle at 50% 50%, transparent 0%, rgba(18, 20, 19, 0.82) 70%),
     linear-gradient(rgba(18, 20, 19, 0.28), rgba(18, 20, 19, 0.86)),
-    url("https://lh3.googleusercontent.com/aida-public/AB6AXuAQdU-vBjUqziud4X2qBny3sEfPJCrZcc4oXDk5h1JmEIAlTiIiDCMQWeEAWKzO543yaY7q-fU0mi1EkvQBvWztlnmmdr5YT5_YqZxJRXb6p4zpIIW3Y26oneQ4CYqnI2yya3r1WmOFni4UZUbwdb2oAp3Oo3IeHS5HWC6DgiktVxkAxbdh4V8fp7qRBpB1EFWfXQlKUyscYzy-drldYouJH6wZvf2bb1MKKgc4A2eN8gPMgydgYUUIQI0KftI8uyXUVtrUKfpTqZc") center / cover fixed;
+    url("/assets/hero-road.webp") center / cover fixed;
   color: #e3e2e1;
   font-family: "Hanken Grotesk", system-ui, sans-serif;
 }
@@ -8675,7 +8682,8 @@ img {
   gap: 0.55rem;
 }
 
-.stitch-error-nav button {
+.stitch-error-nav button,
+.stitch-error-nav a {
   min-height: 2.75rem;
   display: inline-flex;
   align-items: center;
@@ -8687,9 +8695,11 @@ img {
   padding: 0 1rem;
   font-weight: 800;
   transition: transform 200ms ease, background 200ms ease, border-color 200ms ease;
+  text-decoration: none;
 }
 
-.stitch-error-nav button:hover {
+.stitch-error-nav button:hover,
+.stitch-error-nav a:hover {
   transform: translateY(-2px);
   border-color: rgba(124, 213, 213, 0.36);
   background: rgba(124, 213, 213, 0.12);
@@ -9573,18 +9583,23 @@ img {
   gap: 2rem;
 }
 
-.stitch-system-nav button {
+.stitch-system-nav button,
+.stitch-system-nav a {
   color: var(--ot-on-surface-variant);
   font-weight: 600;
   transition: color 300ms ease, border-color 300ms ease, transform 200ms ease;
+  text-decoration: none;
 }
 
 .stitch-system-nav button:hover,
-.stitch-system-nav button.is-active {
+.stitch-system-nav button.is-active,
+.stitch-system-nav a:hover,
+.stitch-system-nav a.is-active {
   color: var(--ot-primary);
 }
 
-.stitch-system-nav button.is-active {
+.stitch-system-nav button.is-active,
+.stitch-system-nav a.is-active {
   border-bottom: 2px solid var(--ot-primary);
 }
 
@@ -11686,6 +11701,57 @@ img {
   padding: 0.75rem 0.9rem;
 }
 
+.hero-form-error {
+  margin: -0.15rem 0 0;
+  color: #ffdad6;
+  font-weight: 800;
+}
+
+.demo-data-warning {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  color: #ffdad6;
+  background:
+    linear-gradient(135deg, rgba(147, 0, 10, 0.38), rgba(124, 213, 213, 0.08)),
+    rgba(13, 14, 14, 0.72);
+  border: 1px solid rgba(255, 180, 171, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 218, 214, 0.08), 0 16px 48px rgba(147, 0, 10, 0.22);
+}
+
+.demo-data-warning strong {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.demo-data-warning span {
+  color: #e3e2e1;
+  line-height: 1.45;
+}
+
+.stitch-gem-result.is-demo,
+.stitch-reco-card.is-demo {
+  border-style: dashed;
+  border-color: rgba(255, 218, 214, 0.48);
+  background:
+    linear-gradient(135deg, rgba(147, 0, 10, 0.24), rgba(18, 20, 19, 0.68)),
+    rgba(18, 20, 19, 0.62);
+}
+
+.demo-card-watermark {
+  position: absolute;
+  z-index: 3;
+  inset: 0.75rem auto auto 0.75rem;
+  padding: 0.34rem 0.58rem;
+  border-radius: 0.55rem;
+  color: #ffdad6;
+  background: rgba(105, 0, 5, 0.78);
+  border: 1px solid rgba(255, 218, 214, 0.34);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
 .result-badge-row {
   display: flex;
   flex-wrap: wrap;
@@ -11731,12 +11797,32 @@ img {
   color: #98f2f1;
 }
 
+.advanced-filter-panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(180, 203, 198, 0.14);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.75rem;
+}
+
+.advanced-filter-panel summary {
+  color: #98f2f1;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.advanced-filter-panel[open] summary {
+  margin-bottom: 0.75rem;
+}
+
 .layover-page {
   min-height: 100svh;
   background:
     radial-gradient(circle at 75% 20%, rgba(124, 213, 213, 0.12), transparent 25rem),
     linear-gradient(rgba(18, 20, 19, 0.72), #121413),
-    url("https://lh3.googleusercontent.com/aida-public/AB6AXuCFSjuNaBBEFIXwofy21U_kouAWevXSRHNP-GLOsUTjoJD9KjKCoquNWu8h6AoHVgKAW-ICvWqdRGobYct55vEIyQVTQr4J9MyVkCTI13ZaHYkYUmf46qOs-eJvKhPJSEm_g3Ipzu2z8EqHR1IslCVfRZP1DVymJhxRiD_M9hi7hoGqfMafIAfGGwbeMX03UUO7X-CSwjpAO-ELh7cfO0VR_ssZnUtWRC0Nz8QEzpIm_hKru-0nZqMIl6APnYvkU95dtdDahxCOyeI") center / cover fixed;
+    url("/assets/station-night.webp") center / cover fixed;
   color: #e3e2e1;
 }
 
@@ -11793,6 +11879,24 @@ img {
   font-size: 1.4rem;
 }
 
+.layover-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.layover-options-row label {
+  min-height: 2.75rem;
+  display: inline-flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(180, 203, 198, 0.14);
+}
+
 .layover-results {
   min-width: 0;
 }
@@ -11806,6 +11910,100 @@ img {
 
 .layover-card-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.layover-fit-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.layover-fit-card.does-not-fit {
+  opacity: 0.72;
+}
+
+.layover-fit-grid {
+  padding: 0.8rem;
+  border-radius: 1rem;
+  background: rgba(13, 14, 14, 0.64);
+  border: 1px solid rgba(180, 203, 198, 0.14);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.layover-fit-grid span,
+.layover-fit-grid em {
+  color: #c2c8c5;
+  font-size: 0.75rem;
+  font-style: normal;
+}
+
+.layover-fit-grid strong,
+.layover-fit-grid em {
+  color: #98f2f1;
+  font-weight: 800;
+}
+
+.layover-fit-grid em {
+  grid-column: 1 / -1;
+}
+
+.saved-gems-toolbar {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #c2c8c5;
+}
+
+.saved-gems-toolbar button,
+.saved-gem-actions button,
+.saved-gem-actions a {
+  min-height: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(180, 203, 198, 0.16);
+  color: #e3e2e1;
+  background: rgba(255, 255, 255, 0.055);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.48rem 0.75rem;
+  text-decoration: none;
+}
+
+.saved-note-field {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.saved-note-field span {
+  color: #98f2f1;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.saved-note-field textarea {
+  width: 100%;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(180, 203, 198, 0.16);
+  color: #e3e2e1;
+  background: rgba(13, 14, 14, 0.56);
+  padding: 0.7rem;
+  resize: vertical;
+}
+
+.saved-gem-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
 }
 
 @media (max-width: 1180px) {

@@ -19,10 +19,17 @@ export function validateDiscoverRequest(body: unknown): DiscoverRequest {
   if (radius <= 0 || radius > 50) {
     throw new ValidationError("radius must be greater than 0 and no more than 50 km.");
   }
+  const originLabel = typeof value.origin === "string" ? value.origin.trim() : "";
+  const destinationLabel = typeof value.destination === "string" ? value.destination.trim() : "";
+  const sameLabel = originLabel && destinationLabel && originLabel.toLowerCase() === destinationLabel.toLowerCase();
+  const sameCoordinates = Math.abs(originLat - destinationLat) < 0.00001 && Math.abs(originLng - destinationLng) < 0.00001;
+  if (sameLabel || sameCoordinates) {
+    throw new ValidationError("Starting point and destination must be different.");
+  }
 
   return {
-    origin: typeof value.origin === "string" ? value.origin : undefined,
-    destination: typeof value.destination === "string" ? value.destination : undefined,
+    origin: originLabel || undefined,
+    destination: destinationLabel || undefined,
     originLat,
     originLng,
     destinationLat,

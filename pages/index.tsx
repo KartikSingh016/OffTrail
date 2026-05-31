@@ -5,6 +5,7 @@ const allowedViews = new Set([
   "home",
   "routeDiscovery",
   "nearby",
+  "layover",
   "results",
   "itinerary",
   "dashboard",
@@ -14,7 +15,7 @@ const allowedViews = new Set([
   "error"
 ]);
 
-const allowedContentPages = new Set(["how", "pricing", "community", "blog", "about", "settings"]);
+const allowedContentPages = new Set(["how"]);
 
 type HomePageProps = {
   initialView?: string | null;
@@ -25,11 +26,28 @@ export default function HomePage({ initialView = null, initialContentPage = null
   return (
     <>
       <Head>
-        <title>OffTrail</title>
+        <title>OffTrail | Verified Hidden-Gem Route Planner</title>
         <meta
           name="description"
-          content="OffTrail reveals hidden gardens, viewpoints, cafes, and local favorites along your route."
+          content="Discover verified hidden gems along your route using real map/provider data. No synthetic routes, no fake places."
         />
+        <link rel="canonical" href="https://off-trail-flax.vercel.app/" />
+        <meta property="og:title" content="OffTrail | Verified Hidden-Gem Route Planner" />
+        <meta
+          property="og:description"
+          content="Plan a route and find real, map-verified stops for food, views, nature, culture, nightlife, and layovers."
+        />
+        <meta property="og:url" content="https://off-trail-flax.vercel.app/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://off-trail-flax.vercel.app/assets/og-card.webp" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="OffTrail | Verified Hidden-Gem Route Planner" />
+        <meta
+          name="twitter:description"
+          content="Verified hidden gems along your route. Real provider data only."
+        />
+        <meta name="twitter:image" content="https://off-trail-flax.vercel.app/assets/og-card.webp" />
+        <link rel="preload" as="image" href="/assets/hero-road.webp" type="image/webp" />
       </Head>
       <App {...({ initialView, initialContentPage } as any)} />
     </>

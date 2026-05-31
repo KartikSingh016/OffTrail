@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Camera, Compass, Gem, Loader2, MapPin, Navigation, Star } from "lucide-react";
 
-const MAP_BACKGROUND =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBVVfXTx2UjZoOxJMZ_5ZkNzIULqzAq5a1NoLZo5CFDPeBpqbbYlpoLhK6Cc3p9mSLCbFyA_b7xucpNZRsXMIuJiovOeHaHgMRGAPWM86G8eRQ0y-HXyDXyDGZQ-4j7EMDBo7P4uDOg4aa1rtj_riFt8dxhGJ_cCOYr7wMzK0jdal9XJj_ACUPeCSYf5RL5ftjt9ygyDiBvOUJMloj9yEyreDFSvaLBr_Jc-c-ti1Z2pIX3jnvGwLUniNM5bwkz6SgyhN2liW4BaHE";
+const MAP_BACKGROUND = "/assets/map-preview.webp";
 
 const EMPTY_COORDINATES = { lat: 0, lng: 0 };
 
@@ -292,7 +291,11 @@ function getUserCoordinates() {
           lat: Number(position.coords.latitude.toFixed(6)),
           lng: Number(position.coords.longitude.toFixed(6))
         }),
-      () => reject(new Error("Location permission denied.")),
+      (error) => {
+        if (error?.code === 1) reject(new Error("Location access is off. Enter a city in Nearby mode."));
+        else if (error?.code === 2) reject(new Error("Location is unavailable. Enter a city in Nearby mode."));
+        else reject(new Error("Location request timed out. Enter a city in Nearby mode."));
+      },
       { enableHighAccuracy: false, maximumAge: 60000, timeout: 1800 }
     );
   });
