@@ -36,6 +36,7 @@ const OVERPASS_ENDPOINTS = [
 
 const OSM_RESULT_LIMIT = 12;
 const OVERPASS_TIMEOUT_MS = 7000;
+const OSM_USER_AGENT = "OffTrail/1.0 (contact@offtrail.app)";
 
 export async function searchOsmPlaces(center: LatLng, radiusKm: number, filters: string[] = []): Promise<PlaceCandidate[]> {
   const radiusMeters = Math.min(Math.max(Math.round(radiusKm * 1000), 500), 7000);
@@ -47,7 +48,7 @@ export async function searchOsmPlaces(center: LatLng, radiusKm: number, filters:
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "User-Agent": "OffTrail route discovery"
+          "User-Agent": OSM_USER_AGENT
         },
         signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
         body: `data=${encodeURIComponent(query)}`
@@ -89,7 +90,7 @@ export async function searchNominatimPlaces(
       const response = await fetch(url.toString(), {
         headers: {
           Accept: "application/json",
-          "User-Agent": "OffTrail route discovery"
+          "User-Agent": OSM_USER_AGENT
         },
         signal: AbortSignal.timeout(5000)
       });
@@ -128,7 +129,7 @@ export async function searchNominatimAround(
       const response = await fetch(url.toString(), {
         headers: {
           Accept: "application/json",
-          "User-Agent": "OffTrail route discovery"
+          "User-Agent": OSM_USER_AGENT
         },
         signal: AbortSignal.timeout(5000)
       });

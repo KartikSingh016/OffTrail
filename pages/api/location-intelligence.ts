@@ -85,7 +85,7 @@ export default async function handler(
     return res.status(200).json({
       locations: [],
       userLocation,
-      message: "Nearby providers are temporarily unavailable. OffTrail did not create synthetic places."
+      message: "Nearby providers are temporarily unavailable. Please try again or search another area."
     });
   }
 }

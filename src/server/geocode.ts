@@ -8,6 +8,8 @@ export type PlaceSuggestion = LatLng & {
   name: string;
 };
 
+type AutocompleteSuggestion = Omit<PlaceSuggestion, "lat" | "lng"> & Partial<LatLng>;
+
 export class GeocodeError extends Error {
   status = 404;
 }
@@ -101,11 +103,29 @@ type NominatimResponse = Array<{
   namedetails?: Record<string, string>;
 }>;
 
+const NOMINATIM_USER_AGENT = "OffTrail/1.0 (contact@offtrail.app)";
+const autocompleteCache = new Map<string, AutocompleteSuggestion[]>();
+const geocodeCache = new Map<string, PlaceSuggestion | null>();
+const MAX_GEOCODE_CACHE_ENTRIES = 20;
+
 export async function autocompletePlaces(query: string) {
   const trimmed = query.trim();
   if (!trimmed) return [];
+  const cacheKey = normalizeText(trimmed);
+  const cached = autocompleteCache.get(cacheKey);
+  if (cached) return cached.map((suggestion) => ({ ...suggestion }));
 
-  if (!serverEnv.googleMapsApiKey) return autocompleteWithNominatim(trimmed);
+  const knownMatches = knownPlaceMatches(trimmed);
+  if (knownMatches.length && normalizeText(trimmed).length <= 4) {
+    rememberAutocomplete(cacheKey, knownMatches);
+    return knownMatches;
+  }
+
+  if (!serverEnv.googleMapsApiKey) {
+    const suggestions = mergeSuggestions(knownMatches, await autocompleteWithNominatim(trimmed));
+    rememberAutocomplete(cacheKey, suggestions);
+    return suggestions;
+  }
 
   try {
     const response = await fetchJson<GoogleAutocompleteResponse>(
@@ -124,7 +144,7 @@ export async function autocompletePlaces(query: string) {
       "Google Places Autocomplete"
     );
 
-    return (response.suggestions || [])
+    const googleSuggestions = (response.suggestions || [])
       .map((suggestion) => suggestion.placePrediction)
       .filter(Boolean)
       .slice(0, 6)
@@ -134,8 +154,13 @@ export async function autocompletePlaces(query: string) {
         name: prediction!.structuredFormat?.mainText?.text || prediction!.text?.text || ""
       }))
       .filter((item) => item.id && item.label);
+    const suggestions = mergeSuggestions(knownMatches, googleSuggestions);
+    rememberAutocomplete(cacheKey, suggestions);
+    return suggestions;
   } catch {
-    return autocompleteWithNominatim(trimmed);
+    const suggestions = mergeSuggestions(knownMatches, await autocompleteWithNominatim(trimmed));
+    rememberAutocomplete(cacheKey, suggestions);
+    return suggestions;
   }
 }
 
@@ -151,11 +176,23 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
     };
   }
 
+  const cacheKey = normalizeText(query);
+  const cached = geocodeCache.get(cacheKey);
+  if (cached) return { ...cached };
+
+  const known = knownPlaceFallback(query);
+  if (known) {
+    rememberGeocode(cacheKey, known);
+    return known;
+  }
+
   if (!serverEnv.googleMapsApiKey) {
     const nominatim = await geocodeWithNominatim(query);
-    if (nominatim) return nominatim;
-    const known = knownPlaceFallback(query);
-    if (known) return known;
+    if (nominatim) {
+      rememberGeocode(cacheKey, nominatim);
+      return nominatim;
+    }
+    rememberGeocode(cacheKey, null);
     throw new GeocodeError(`Location not found: "${query}". Check the spelling or choose a suggestion.`);
   }
 
@@ -169,7 +206,7 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
     if (!result || result.partial_match || typeof location?.lat !== "number" || typeof location.lng !== "number") {
       throw new Error("Location not found.");
     }
-    return {
+    const place = {
       id: result.place_id || result.formatted_address || query,
       name:
         result.address_components?.find((component) => component.types?.includes("locality"))?.long_name ||
@@ -179,11 +216,15 @@ export async function geocodePlace(query: string): Promise<PlaceSuggestion> {
       lat: location.lat,
       lng: location.lng
     };
+    rememberGeocode(cacheKey, place);
+    return place;
   } catch {
     const nominatim = await geocodeWithNominatim(query);
-    if (nominatim) return nominatim;
-    const known = knownPlaceFallback(query);
-    if (known) return known;
+    if (nominatim) {
+      rememberGeocode(cacheKey, nominatim);
+      return nominatim;
+    }
+    rememberGeocode(cacheKey, null);
     throw new GeocodeError(`Location not found: "${query}". Check the spelling or choose a suggestion.`);
   }
 }
@@ -211,7 +252,7 @@ async function autocompleteWithNominatim(query: string): Promise<PlaceSuggestion
       headers: {
         Accept: "application/json",
         "Accept-Language": "en",
-        "User-Agent": "OffTrail route discovery"
+        "User-Agent": NOMINATIM_USER_AGENT
       }
     });
     if (!response.ok) return [];
@@ -249,7 +290,7 @@ async function geocodeWithNominatim(query: string): Promise<PlaceSuggestion | nu
       headers: {
         "Accept": "application/json",
         "Accept-Language": "en",
-        "User-Agent": "OffTrail route discovery demo"
+        "User-Agent": NOMINATIM_USER_AGENT
       }
     });
     if (!response.ok) return null;
@@ -308,4 +349,43 @@ function knownPlaceFallback(query: string) {
   const placeId = knownPlaceAliases.get(normalized) || knownPlaceAliases.get(withoutCountryComma);
   const place = knownPlaces.find((item) => item.id === placeId);
   return place ? { ...place } : null;
+}
+
+function knownPlaceMatches(query: string) {
+  const normalized = normalizeText(query);
+  if (!normalized) return [];
+  const exact = knownPlaceFallback(query);
+  const matches = knownPlaces.filter((place) => {
+    const label = normalizeText(`${place.name} ${place.label}`);
+    return label.includes(normalized) || normalized.includes(normalizeText(place.name));
+  });
+  return mergeSuggestions(exact ? [exact] : [], matches).slice(0, 4);
+}
+
+function mergeSuggestions(...groups: AutocompleteSuggestion[][]) {
+  const seen = new Set<string>();
+  return groups.flat().filter((suggestion) => {
+    const key = suggestion.id || normalizeText(suggestion.label);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 6);
+}
+
+function rememberAutocomplete(key: string, suggestions: AutocompleteSuggestion[]) {
+  autocompleteCache.set(key, suggestions.map((suggestion) => ({ ...suggestion })));
+  trimCache(autocompleteCache);
+}
+
+function rememberGeocode(key: string, place: PlaceSuggestion | null) {
+  geocodeCache.set(key, place ? { ...place } : null);
+  trimCache(geocodeCache);
+}
+
+function trimCache<T>(cache: Map<string, T>) {
+  while (cache.size > MAX_GEOCODE_CACHE_ENTRIES) {
+    const first = cache.keys().next().value;
+    if (!first) break;
+    cache.delete(first);
+  }
 }

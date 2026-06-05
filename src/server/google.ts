@@ -124,7 +124,7 @@ export async function calculateRoute(input: DiscoverRequest): Promise<RouteSumma
       return fallback;
     }
     throw new HttpError(
-      "Google Routes API is required to calculate a safe route. Add GOOGLE_MAPS_API_KEY or set OFFTRAIL_ALLOW_ESTIMATED_ROUTES=true for local demos only.",
+      "Google Routes API is required to calculate a safe route. Add GOOGLE_MAPS_API_KEY or set OFFTRAIL_ALLOW_ESTIMATED_ROUTES=true for local sample previews only.",
       503,
       "Missing GOOGLE_MAPS_API_KEY"
     );

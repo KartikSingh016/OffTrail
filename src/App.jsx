@@ -106,6 +106,14 @@ const routePersonalityOptions = [
   "Cinematic"
 ];
 
+const layoverTransitMinutes = {
+  Walking: 15,
+  "Public transport": 20,
+  "Taxi/rideshare": 10
+};
+
+const layoverReturnBufferMinutes = 15;
+
 function normalizeLocationInput(value = "") {
   return String(value).trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -508,8 +516,8 @@ function LandingPage() {
     navigateTo("nearby");
   }
 
-  function tryDemoRoute() {
-    const demo = createDemoRouteResults();
+  function trySampleRoute() {
+    const sample = createSampleRouteResults();
     setRouteState({
       origin: { label: "Bonn, Germany", name: "Bonn, Germany", lat: 50.7374, lng: 7.0982 },
       destination: { label: "Cologne, Germany", name: "Cologne, Germany", lat: 50.9375, lng: 6.9603 },
@@ -519,12 +527,12 @@ function LandingPage() {
       travelMode: "Train",
       routeStyle: "Cinematic",
       departureTime: toDatetimeLocal(new Date(Date.now() + 60 * 60 * 1000)),
-      results: demo,
-      selectedLocationIds: demo.locations.slice(0, 3).map((location) => location.id),
+      results: sample,
+      selectedLocationIds: sample.locations.slice(0, 3).map((location) => location.id),
       discoveryError: null,
-      demoMode: true
+      sampleMode: true
     });
-    notify("Demo route loaded. Demo cards are clearly labeled and are not production results.", "info");
+    notify("Sample route loaded. Sample cards are clearly labeled as previews.", "info");
     navigateTo("routeDiscovery");
   }
 
@@ -537,7 +545,7 @@ function LandingPage() {
           <a href={viewHref("routeDiscovery")} onClick={(event) => handleViewNavigation(event, navigateTo, "routeDiscovery")}>Routes</a>
           <a href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
           <a href={viewHref("layover")} onClick={(event) => handleViewNavigation(event, navigateTo, "layover")}>Layover</a>
-          <a href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved Gems</a>
+          <a href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved</a>
         </nav>
         <div className="stitch-nav-actions">
           <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={21} /></button>
@@ -569,37 +577,29 @@ function LandingPage() {
                 culture, nightlife, and layovers.
               </p>
               <p className="hero-trust-line">
-                Powered by real map sources. No synthetic routes. No fake places.
+                Powered by provider-backed map data with clear source labels.
               </p>
               <form className="hero-route-planner stitch-glass" ref={plannerRef} onSubmit={planRoute} noValidate>
                 <div className="hero-planner-head">
-                  <span>Plan with verified data</span>
-                  <strong>No source, no card</strong>
+                  <span>Route planner</span>
+                  <strong>Verified stops only</strong>
                 </div>
                 <div className="hero-planner-grid">
-                  <label className={fromError ? "has-error" : ""}>
-                    <span>From</span>
-                    <input
-                      ref={fromInputRef}
-                      value={from}
-                      onChange={(event) => setFrom(event.target.value)}
-                      placeholder="Starting point, station, city, or address"
-                      aria-invalid={Boolean(fromError)}
-                      aria-describedby={fromError ? "hero-from-error" : undefined}
-                    />
-                    {fromError && <small id="hero-from-error" role="alert">{fromError}</small>}
-                  </label>
-                  <label className={toError ? "has-error" : ""}>
-                    <span>To</span>
-                    <input
-                      value={to}
-                      onChange={(event) => setTo(event.target.value)}
-                      placeholder="Destination"
-                      aria-invalid={Boolean(toError)}
-                      aria-describedby={toError ? "hero-to-error" : undefined}
-                    />
-                    {toError && <small id="hero-to-error" role="alert">{toError}</small>}
-                  </label>
+                  <PlaceInput
+                    label="From"
+                    value={from}
+                    onChange={setFrom}
+                    placeholder="Starting point, station, city, or address"
+                    error={fromError}
+                    inputRef={fromInputRef}
+                  />
+                  <PlaceInput
+                    label="To"
+                    value={to}
+                    onChange={setTo}
+                    placeholder="Destination"
+                    error={toError}
+                  />
                   <label>
                     <span>Travel mode</span>
                     <select value={travelMode} onChange={(event) => setTravelMode(event.target.value)}>
@@ -633,12 +633,12 @@ function LandingPage() {
                   <button className="stitch-secondary stitch-glass" type="button" onClick={exploreNearMe}>
                     Explore Near Me
                   </button>
-                  <button className="demo-link" type="button" onClick={tryDemoRoute}>
-                    Try demo route
+                  <button className="sample-link" type="button" onClick={trySampleRoute}>
+                    Try sample route
                   </button>
                 </div>
-                <p className="hero-demo-note">
-                  Demo routes are labeled. Production discovery only shows provider-backed places.
+                <p className="hero-sample-note">
+                  Sample routes are labeled and kept separate from verified results.
                 </p>
               </form>
               <div className="stitch-hero-actions">
@@ -653,12 +653,12 @@ function LandingPage() {
                 <div>
                   <small>ROUTE DATA</small>
                   <strong>Verified</strong>
-                  <span>NO SYNTHETIC ROUTES</span>
+                  <span>REAL MAP SOURCES</span>
                 </div>
                 <div>
-                  <small>RESULT RULE</small>
-                  <strong>No fake places</strong>
-                  <span>UNVERIFIED RESULTS STAY HIDDEN</span>
+                  <small>RESULTS</small>
+                  <strong>Provider-backed</strong>
+                  <span>ONLY PROVIDER-BACKED STOPS</span>
                 </div>
                 <div>
                   <small>SOURCES</small>
@@ -693,7 +693,7 @@ function LandingPage() {
                   <span className="stitch-glass">Verified stop</span>
                 </div>
                 <div className="stitch-hud top-left">Checking real routes...</div>
-                <div className="stitch-hud bottom-right">No fake places generated</div>
+                <div className="stitch-hud bottom-right">Provider-backed stops only</div>
                 <div className="stitch-hud-dots"><span /><span /><span /></div>
                 <div className="preview-stop-list" aria-label="Verified route preview">
                   {previewStops.map((stop) => (
@@ -733,32 +733,32 @@ function LandingPage() {
             <span><Route size={28} /></span>
             <h3>Route Intelligence</h3>
             <p>Find places near your actual route, not random spots far away.</p>
-            <strong>PLAN ROUTE <ArrowRight size={15} /></strong>
+            <strong>Open route planner <ArrowRight size={15} /></strong>
           </button>
           <button className="stitch-feature stitch-glass" type="button" onClick={exploreNearMe}>
             <span><Navigation size={28} /></span>
             <h3>Explore Around You</h3>
             <p>Use your current location or search a city to discover nearby verified gems.</p>
-            <strong>SCAN NEARBY <ArrowRight size={15} /></strong>
+            <strong>Scan nearby <ArrowRight size={15} /></strong>
           </button>
           <button className="stitch-feature stitch-glass" type="button" onClick={() => navigateTo("layover")}>
             <span><Clock size={28} /></span>
             <h3>Layover Discovery</h3>
             <p>Enter a station or airport and your available time. OffTrail only shows stops that can fit the window.</p>
-            <strong>PLAN LAYOVER <ArrowRight size={15} /></strong>
+            <strong>Plan a layover <ArrowRight size={15} /></strong>
           </button>
           <button className="stitch-feature stitch-glass" type="button" onClick={() => navigateTo("favorites")}>
             <span><Bookmark size={28} /></span>
             <h3>Saved Gems</h3>
             <p>Bookmark places, create a personal travel map, and keep notes on this device.</p>
-            <strong>VIEW SAVED GEMS <ArrowRight size={15} /></strong>
+            <strong>View saved <ArrowRight size={15} /></strong>
           </button>
         </section>
 
         <section className="trust-section stitch-glass" aria-label="Data trust">
           <div>
             <span className="section-kicker">Verified by design</span>
-            <h2>We would rather show no result than show a fake place.</h2>
+            <h2>Results are shown only when source data is available.</h2>
             <p>
               OffTrail uses provider-backed route and place data, shows source and confidence labels,
               and stops the flow with a clear error when a route or place cannot be verified.
@@ -841,7 +841,7 @@ function WildernessNavbar({ active }) {
     ["explore", "Explore", "home"],
     ["routes", "Routes", "routeDiscovery"],
     ["nearby", "Nearby", "nearby"],
-    ["saved", "Saved Gems", "favorites"]
+    ["saved", "Saved", "favorites"]
   ];
 
   return (
@@ -936,7 +936,7 @@ function HeroSection() {
       <div className="hero-copy-panel">
         <SectionHeader eyebrow="Next-gen discovery" title="Discover verified hidden gems along your route" />
         <p>
-          AI-powered journey discovery for routes, layovers, and nearby exploration - uncover hidden gems,
+          Practical journey discovery for routes, layovers, and nearby exploration - uncover hidden gems,
           viewpoints, gardens, local favorites, and photogenic places most travelers miss.
         </p>
         <div className="hero-actions">
@@ -1287,7 +1287,7 @@ function PlannerModal() {
   );
 }
 
-function PlaceInput({ label, value, onChange, placeholder, error = "", valid = false, disabled = false }) {
+function PlaceInput({ label, value, onChange, placeholder, error = "", valid = false, disabled = false, inputRef = null }) {
   const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
@@ -1306,7 +1306,7 @@ function PlaceInput({ label, value, onChange, placeholder, error = "", valid = f
       } catch {
         setSuggestions([]);
       }
-    }, 220);
+    }, 280);
     return () => {
       window.clearTimeout(timer);
       controller.abort();
@@ -1316,7 +1316,7 @@ function PlaceInput({ label, value, onChange, placeholder, error = "", valid = f
   return (
     <label className={`field place-field ${error ? "is-invalid" : valid ? "is-valid" : ""}`}>
       <span>{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" aria-invalid={Boolean(error)} disabled={disabled} />
+      <input ref={inputRef} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" aria-invalid={Boolean(error)} disabled={disabled} />
       {error && <span className="field-error" role="alert">{error}</span>}
       {suggestions.length > 0 && (
         <div className="suggestion-list liquid-glass">
@@ -1333,8 +1333,8 @@ function PlaceInput({ label, value, onChange, placeholder, error = "", valid = f
 
 function JourneyRouteDiscoveryPage() {
   const { routeState, setRouteState, setView, notify, favorites, setFavorites } = useOffTrail();
-  const [origin, setOrigin] = useState(routeState.origin?.label || routeState.origin?.name || "Bad Honnef");
-  const [destination, setDestination] = useState(routeState.destination?.label || routeState.destination?.name || "Munich");
+  const [origin, setOrigin] = useState(routeState.origin?.label || routeState.origin?.name || "");
+  const [destination, setDestination] = useState(routeState.destination?.label || routeState.destination?.name || "");
   const [departureTime, setDepartureTime] = useState(routeState.departureTime || toDatetimeLocal(new Date(Date.now() + 86400000)));
   const [travelMode, setTravelMode] = useState(routeState.travelMode || "Train");
   const [radius, setRadius] = useState(routeState.radius || 5);
@@ -1439,7 +1439,6 @@ function JourneyRouteDiscoveryPage() {
         setScanStage("error");
         setRouteState((state) => ({ ...state, results: null, selectedLocationIds: [], discoveryError }));
         notify(publicMessage, "error", discoverRoute);
-        setView("error");
         return;
       }
 
@@ -1473,7 +1472,6 @@ function JourneyRouteDiscoveryPage() {
       });
       notify(result.locations?.length ? `Found ${result.total} places along your route.` : "No hidden places found for this route yet.", result.locations?.length ? "success" : "info");
       setScanStage(result.locations?.length ? "complete" : "empty");
-      if (!result.locations?.length) setView("error");
     } catch (error) {
       console.warn("Journey discovery error:", error);
       const message = error instanceof Error ? error.message : "Failed to discover route.";
@@ -1484,7 +1482,6 @@ function JourneyRouteDiscoveryPage() {
       setDiscoveryState(discoveryError);
       setScanStage("error");
       notify(publicMessage, "error", discoverRoute);
-      setView("error");
     } finally {
       setLoading(false);
     }
@@ -1530,7 +1527,7 @@ function JourneyRouteDiscoveryPage() {
       layoverPlaces={layoverPlaces}
       notify={notify}
       setView={setView}
-      demoMode={Boolean(routeState.demoMode || results?.isDemo)}
+      sampleMode={Boolean(routeState.sampleMode || results?.isSample)}
     />
   );
 }
@@ -1566,10 +1563,11 @@ function StitchJourneyResultsPage({
   layoverPlaces,
   notify,
   setView,
-  demoMode = false
+  sampleMode = false
 }) {
-  const routeDistance = results?.route?.distance || "Awaiting scan";
-  const routeDuration = results?.route?.duration || "Verified only";
+  const hasRoute = Boolean(results?.route);
+  const routeDistance = results?.route?.distance;
+  const routeDuration = results?.route?.duration;
   const startLabel = results?.route?.segments?.[0]?.from || origin || "Origin";
   const endLabel = results?.route?.segments?.at?.(-1)?.to || destination || "Destination";
 
@@ -1588,22 +1586,16 @@ function StitchJourneyResultsPage({
               <Gem className="text-primary" size={22} />
             </div>
             <h2 className="font-display-lg text-headline-lg">Route discovery</h2>
-            <p className="text-on-surface-variant">Find verified stops near your real route. OffTrail will not invent results.</p>
-            {demoMode && (
-              <div className="demo-data-warning" role="status" aria-live="polite">
-                <strong>DEMO DATA — NOT REAL PROVIDER RESULT</strong>
-                <span>These sample cards preview the interface only and are styled differently from production verified results.</span>
+            <p className="text-on-surface-variant">Enter two places, then choose how far you are willing to detour.</p>
+            {sampleMode && (
+              <div className="sample-data-warning" role="status" aria-live="polite">
+                <strong>SAMPLE PREVIEW — NOT PROVIDER VERIFIED</strong>
+                <span>These cards preview the interface and are styled differently from verified results.</span>
               </div>
             )}
             <div className="stitch-route-fields">
-              <label>
-                <span>Origin</span>
-                <input value={origin} onChange={(event) => setOrigin(event.target.value)} disabled={loading} aria-invalid={submitted && !origin.trim()} />
-              </label>
-              <label>
-                <span>Destination</span>
-                <input value={destination} onChange={(event) => setDestination(event.target.value)} disabled={loading} aria-invalid={submitted && !destination.trim()} />
-              </label>
+              <PlaceInput label="Origin" value={origin} onChange={setOrigin} placeholder="City, station, address" error={submitted && !origin.trim() ? "Origin is required." : ""} disabled={loading} />
+              <PlaceInput label="Destination" value={destination} onChange={setDestination} placeholder="City, station, address" error={submitted && !destination.trim() ? "Destination is required." : ""} disabled={loading} />
               <label>
                 <span>Travel Date & Time</span>
                 <input type="datetime-local" value={departureTime} onChange={(event) => setDepartureTime(event.target.value)} disabled={loading} />
@@ -1630,15 +1622,18 @@ function StitchJourneyResultsPage({
               <FilterChips options={preferenceOptions} selected={preferences} onToggle={(key) => toggleSet(preferences, setPreferences, key)} />
             </details>
             <button className="stitch-export-button" type="submit" disabled={loading}>
-              {loading ? <Loader2 className="spin" size={18} /> : <span>Run Discovery</span>}
+              {loading ? <Loader2 className="spin" size={18} /> : <Search size={18} />}
+              <span>{loading ? "Checking real routes..." : "Plan My Route"}</span>
               <Compass size={18} />
             </button>
           </form>
-          <div className="glass-card stitch-tactical-stats">
-            <div>Distance: {routeDistance}</div>
-            <div>Duration: {routeDuration}</div>
-            <div>Found: {visibleLocations.length}</div>
-          </div>
+          {hasRoute && (
+            <div className="glass-card stitch-tactical-stats" aria-label="Verified route summary">
+              <div>Distance: {routeDistance}</div>
+              <div>Duration: {routeDuration}</div>
+              <div>Verified stops: {visibleLocations.length}</div>
+            </div>
+          )}
         </aside>
 
         <section className="stitch-corridor-stage">
@@ -1650,10 +1645,12 @@ function StitchJourneyResultsPage({
               <i />
               <span>Verified data only</span>
             </div>
-            <div className="stitch-dest-chip">
-              <span>{endLabel}</span>
-              <strong>DESTINATION</strong>
-            </div>
+            {hasRoute && (
+              <div className="stitch-dest-chip">
+                <span>{endLabel}</span>
+                <strong>DESTINATION</strong>
+              </div>
+            )}
             <div className="stitch-map-actions">
               <button type="button" onClick={() => notify("Map preview focused.")} aria-label="Focus map preview"><Search size={18} /></button>
               <button type="button" onClick={() => notify("Map layers will be configurable when provider maps are connected.")} aria-label="Map layers"><MapIcon size={18} /></button>
@@ -1661,8 +1658,8 @@ function StitchJourneyResultsPage({
             {!visibleLocations.length && (
               <div className="stitch-map-empty glass-card">
                 <Compass size={32} />
-                <strong>{loading ? scanStageHeadline(scanStage) : "Run discovery to load real places"}</strong>
-                <p>{loading ? "OffTrail is checking real routes and provider-backed places." : "Enter a real origin and destination, then run discovery. No fake places are shown."}</p>
+                <strong>{loading ? scanStageHeadline(scanStage) : discoveryState?.type ? "Scan stopped safely" : "Plan a route to load verified stops"}</strong>
+                <p>{loading ? "OffTrail is checking real routes and provider-backed places." : discoveryState?.message || "Enter a real origin and destination, then plan the route. Verified stops appear after source data is returned."}</p>
               </div>
             )}
           </div>
@@ -1671,7 +1668,7 @@ function StitchJourneyResultsPage({
         <section className="stitch-found-panel">
           <div className="stitch-found-head">
             <h3 className="font-headline-lg-mobile text-on-surface">Found Gems</h3>
-            <span>Filter: Closest</span>
+            <span>{visibleLocations.length ? "Sorted by shortest detour" : "Verified results only"}</span>
           </div>
           <div className="stitch-found-list custom-scrollbar">
             {visibleLocations.length ? (
@@ -1712,14 +1709,14 @@ function StitchTopNav({ active = "explore" }) {
   return (
     <header className="stitch-system-nav">
       <a className="stitch-system-brand" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>
-        Off-Trail
+        OffTrail
       </a>
       <nav>
         <a className={active === "explore" ? "is-active" : ""} href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>Explore</a>
         <a className={active === "routes" ? "is-active" : ""} href={viewHref("routeDiscovery")} onClick={(event) => handleViewNavigation(event, navigateTo, "routeDiscovery")}>Routes</a>
         <a className={active === "nearby" ? "is-active" : ""} href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
         <a className={active === "layover" ? "is-active" : ""} href={viewHref("layover")} onClick={(event) => handleViewNavigation(event, navigateTo, "layover")}>Layover</a>
-        <a className={active === "saved" ? "is-active" : ""} href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved Gems</a>
+        <a className={active === "saved" ? "is-active" : ""} href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved</a>
       </nav>
       <div>
         <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={19} /></button>
@@ -1780,7 +1777,7 @@ function StitchGemResultCard({ place, index = 0, onSelect, onToggle, onSave, sel
   const reason = place.reason || place.description || "A verified place close enough to consider for this route.";
   return (
     <article
-      className={`glass-card group stitch-gem-result ${selected ? "is-selected" : ""} ${place.isDemo ? "is-demo" : ""}`}
+      className={`glass-card group stitch-gem-result ${selected ? "is-selected" : ""} ${place.isSample ? "is-sample" : ""}`}
       style={{ animationDelay: `${index * 90}ms` }}
       onClick={onSelect}
       tabIndex={0}
@@ -1795,15 +1792,15 @@ function StitchGemResultCard({ place, index = 0, onSelect, onToggle, onSave, sel
       <div className="stitch-gem-image">
         <img src={image} alt={place.name} onError={(event) => handlePlaceImageError(event, place)} />
         <div />
-        {place.isDemo && <strong className="demo-card-watermark">DEMO DATA</strong>}
-        <span>{place.isDemo ? "DEMO" : distance}</span>
+        {place.isSample && <strong className="sample-card-watermark">SAMPLE</strong>}
+        <span>{place.isSample ? "SAMPLE" : distance}</span>
       </div>
       <div className="stitch-gem-copy">
         <div>{labelForType(place.type) || place.category || "Verified Place"}</div>
         <h4>{place.name}</h4>
         <p>{reason}</p>
         <div className="result-badge-row">
-          {place.isDemo ? <span>Demo data</span> : source ? <span>Verified</span> : null}
+          {place.isSample ? <span>Sample preview</span> : source ? <span>Verified</span> : null}
           <span>{openStatus}</span>
           <span>{confidence}</span>
           {source && <span>{source}</span>}
@@ -1945,8 +1942,8 @@ function DiscoveryStatePanel({ type = "idle", message, onRetry, onNearby }) {
   const states = {
     idle: {
       eyebrow: "Awaiting Scan",
-      title: "Run discovery to load real places",
-      copy: "Enter a real origin and destination, then run discovery. OffTrail will not invent places when routing data is unavailable.",
+      title: "Plan a route to load verified places",
+      copy: "Enter a real origin and destination, then plan the route. OffTrail will not invent places when route or provider data is unavailable.",
       image: stitchMapUrl,
       icon: Search,
       primary: "Run Scan",
@@ -2132,25 +2129,54 @@ function DiscoveryErrorPage() {
 
 function ExploreAroundYouPage() {
   const { notify, favorites, setFavorites } = useOffTrail();
-  const [location, setLocation] = useState("Current location");
+  const [location, setLocation] = useState("");
   const [radius, setRadius] = useState(5);
   const [timeWindow, setTimeWindow] = useState("2 hours");
   const [filters, setFilters] = useState(new Set(["hidden", "nature", "viewpoint", "open-now"]));
   const [openNow, setOpenNow] = useState(true);
   const [safeLate, setSafeLate] = useState(false);
-  const [userLocation, setUserLocation] = useState({ lat: 64.134, lng: -21.467 });
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("manual");
   const [places, setPlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [nearbyError, setNearbyError] = useState("");
 
+  async function useCurrentLocation() {
+    setLoading(true);
+    setNearbyError("");
+    try {
+      const position = await getBrowserPosition();
+      setUserLocation(position);
+      setLocation("Current location");
+      setLocationStatus("allowed");
+      notify("Location access enabled. Run a scan to load nearby verified places.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Location access is unavailable. Enter a city manually.";
+      setLocationStatus("denied");
+      setNearbyError(message);
+      notify(message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function runNearbyScan(event) {
     event?.preventDefault();
     setLoading(true);
     setNearbyError("");
     try {
-      const position = location.trim() && location !== "Current location" ? await geocode(location) : await getBrowserPosition();
+      let position = userLocation;
+      if (location.trim() && location !== "Current location") {
+        position = await geocode(location);
+        setLocationStatus("manual");
+      }
+      if (!position) {
+        position = await getBrowserPosition();
+        setLocation("Current location");
+        setLocationStatus("allowed");
+      }
       const nextLocation = { lat: position.lat, lng: position.lng };
       const response = await fetch("/api/location-intelligence", {
         method: "POST",
@@ -2199,6 +2225,7 @@ function ExploreAroundYouPage() {
       safeLate={safeLate}
       setSafeLate={setSafeLate}
       userLocation={userLocation}
+      locationStatus={locationStatus}
       locations={filteredPlaces}
       activeId={activeId}
       setActiveId={setActiveId}
@@ -2206,6 +2233,7 @@ function ExploreAroundYouPage() {
       setSelectedPlace={setSelectedPlace}
       loading={loading}
       onSubmit={runNearbyScan}
+      onUseLocation={useCurrentLocation}
       favorites={favorites}
       setFavorites={setFavorites}
       notify={notify}
@@ -2229,8 +2257,10 @@ function LayoverPage() {
   const [selectedPlace, setSelectedPlace] = useState(null);
 
   const minutesAvailable = layoverMinutes(availableTime);
-  const returnBuffer = Math.max(25, Math.round(minutesAvailable * 0.28));
-  const visitWindow = Math.max(15, minutesAvailable - returnBuffer);
+  const transitTime = layoverTransitMinutes[method] || 15;
+  const returnBuffer = layoverReturnBufferMinutes;
+  const visitWindow = minutesAvailable - transitTime * 2 - returnBuffer;
+  const canRunLayover = visitWindow >= 15;
   const hubError = submitted && !hub.trim() ? "Enter an airport, station, city, or address." : "";
   const visiblePlaces = places.filter((place) => {
     if (openNowOnly && place.isOpenAtArrival === false) return false;
@@ -2244,6 +2274,12 @@ function LayoverPage() {
     setError("");
     if (!hub.trim()) {
       notify("Add a station or airport first.", "error");
+      return;
+    }
+    if (!canRunLayover) {
+      const message = "This layover window is too short once travel time and the return buffer are included.";
+      setError(message);
+      notify(message, "error");
       return;
     }
     setLoading(true);
@@ -2319,8 +2355,9 @@ function LayoverPage() {
           <div className="layover-buffer">
             <span>Safe return buffer</span>
             <strong>{returnBuffer} min</strong>
-            <small>Total visit estimate target: up to {visitWindow} min</small>
+            <small>{transitTime} min there + {transitTime} min back. Maximum visit time: {Math.max(0, visitWindow)} min.</small>
           </div>
+          {!canRunLayover && <p className="inline-helper-error" role="alert">This window is too short after travel time and return buffer. Choose more time or a faster transport mode.</p>}
           <div className="layover-options-row" role="group" aria-label="Layover filters">
             <label>
               <input type="checkbox" checked={openNowOnly} onChange={() => setOpenNowOnly(!openNowOnly)} />
@@ -2332,7 +2369,7 @@ function LayoverPage() {
             </label>
           </div>
           {error && <p className="inline-helper-error" role="alert">{friendlyDiscoveryMessage(classifyDiscoveryError(error), error)}</p>}
-          <button className="stitch-primary" type="submit" disabled={loading}>
+          <button className="stitch-primary" type="submit" disabled={loading || !canRunLayover}>
             {loading ? <Loader2 className="spin" size={18} /> : <Clock size={18} />}
             {loading ? "Checking verified stops..." : "Find Layover Gems"}
           </button>
@@ -2353,7 +2390,7 @@ function LayoverPage() {
             <article className="glass-card layover-state" role={submitted ? "alert" : "status"} aria-live={submitted ? "assertive" : "polite"}>
               <Search size={30} />
               <strong>{submitted ? "No verified layover stops found" : "Enter a station or airport"}</strong>
-              <p>{submitted ? "Try increasing available time or choosing a different interest. OffTrail will not fill this with fake places." : "Add your hub and available time to search real nearby places."}</p>
+              <p>{submitted ? "Try increasing available time or choosing a different interest." : "Add your hub and available time to search real nearby places."}</p>
             </article>
           )}
           <div className="layover-card-grid">
@@ -2400,6 +2437,7 @@ function StitchSpatialRadarPage({
   safeLate,
   setSafeLate,
   userLocation,
+  locationStatus,
   locations,
   activeId,
   setActiveId,
@@ -2407,6 +2445,7 @@ function StitchSpatialRadarPage({
   setSelectedPlace,
   loading,
   onSubmit,
+  onUseLocation,
   favorites,
   setFavorites,
   notify,
@@ -2440,6 +2479,10 @@ function StitchSpatialRadarPage({
               <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Current location or city" disabled={loading} />
               {nearbyError && <small className="inline-helper-error">Location access is off or unavailable. Enter a city, station, or address manually.</small>}
             </label>
+            <button className="tiny-glass-button nearby-location-button" type="button" onClick={onUseLocation} disabled={loading}>
+              <Navigation size={15} />
+              {locationStatus === "allowed" ? "Location active" : "Use my location"}
+            </button>
             <div className="stitch-radar-group">
               <label className="font-label-caps text-label-caps text-on-surface-variant">Scan Radius</label>
               <div className="stitch-radius-buttons">
@@ -2455,7 +2498,7 @@ function StitchSpatialRadarPage({
               <div className="stitch-time-buttons">
                 {timeOptions.map((option) => (
                   <button key={option} className={timeWindow === option ? "is-active" : ""} type="button" onClick={() => setTimeWindow(option)} disabled={loading}>
-                    <span>{option.replace(" hour", "h")} Window</span>
+                    <span>{option === "1 hour" ? "1h Window" : option === "2 hours" ? "2h Window" : "4h Window"}</span>
                     <Clock size={16} />
                   </button>
                 ))}
@@ -2540,8 +2583,12 @@ function StitchSpatialRadarPage({
                 <p>{loading ? "OffTrail is asking real providers for nearby places." : nearbyError ? "You can still search manually by entering a city, station, or address." : "Scan to load nearby places from real map data."}</p>
               </div>
             )}
-            <div className="stitch-radar-coordinate top">LAT {Math.abs(userLocation.lat || 0).toFixed(4)} deg</div>
-            <div className="stitch-radar-coordinate bottom">LON {Math.abs(userLocation.lng || 0).toFixed(4)} deg</div>
+            {Number.isFinite(userLocation?.lat) && Number.isFinite(userLocation?.lng) && (
+              <>
+                <div className="stitch-radar-coordinate top">LAT {Math.abs(userLocation.lat).toFixed(4)} deg</div>
+                <div className="stitch-radar-coordinate bottom">LON {Math.abs(userLocation.lng).toFixed(4)} deg</div>
+              </>
+            )}
           </div>
 
           <div className="stitch-live-recommendations">
@@ -2564,7 +2611,7 @@ function StitchSpatialRadarPage({
               ) : (
                 <article className="glass-panel stitch-reco-card is-large is-empty">
                   <Search size={28} />
-                  <h4>Deploy scan to load live places</h4>
+                  <h4>Scan to load verified nearby places</h4>
                   <p>OffTrail will not display invented locations. Results appear here only after the nearby endpoint returns verified data.</p>
                 </article>
               )}
@@ -2598,7 +2645,7 @@ function StitchRecommendationCard({ place, variant = "small", active, saved, onH
 
   return (
     <article
-      className={`glass-panel stitch-reco-card is-${variant} ${active ? "is-active" : ""} ${place.isDemo ? "is-demo" : ""}`}
+      className={`glass-panel stitch-reco-card is-${variant} ${active ? "is-active" : ""} ${place.isSample ? "is-sample" : ""}`}
       onMouseEnter={() => onHover?.(place.id)}
       onMouseLeave={() => onHover?.(null)}
       onFocus={() => onHover?.(place.id)}
@@ -2615,10 +2662,10 @@ function StitchRecommendationCard({ place, variant = "small", active, saved, onH
     >
       <img src={image} alt={place.name} onError={(event) => handlePlaceImageError(event, place)} />
       <div className="stitch-reco-shade" />
-      {place.isDemo && <strong className="demo-card-watermark">DEMO DATA</strong>}
+      {place.isSample && <strong className="sample-card-watermark">SAMPLE</strong>}
       <div className="stitch-reco-body">
         <div>
-          <span>{place.isDemo ? "DEMO" : source ? (place.isHiddenGem ? "Verified hidden gem" : `${rating ? rating.toFixed(1) : "Verified"} place`) : "Map result"}</span>
+          <span>{place.isSample ? "Sample" : source ? (place.isHiddenGem ? "Verified hidden gem" : `${rating ? rating.toFixed(1) : "Verified"} place`) : "Map result"}</span>
           <small>{distance} away</small>
         </div>
         <h4>{place.name}</h4>
@@ -2883,7 +2930,7 @@ function HiddenGemCard({ place, index = 0, selected = false, saved = false, acti
           <span><Star size={13} /> {rating > 0 ? rating.toFixed(1) : "Unrated"}</span>
         </div>
         <div className="tag-strip">
-          {place.isDemo ? <span>Demo</span> : source ? <span>Verified</span> : null}
+          {place.isSample ? <span>Sample</span> : source ? <span>Verified</span> : null}
           {source && <span>{source}</span>}
           <span>{confidence}</span>
           <span>{labelForType(place.type) || place.category}</span>
@@ -3086,7 +3133,7 @@ function PlaceDetailDrawer({ place, onClose }) {
           <button type="button" onClick={onClose} aria-label="Back">
             <ArrowLeft size={20} />
           </button>
-          <strong>Off-Trail</strong>
+          <strong>OffTrail</strong>
           <button type="button" onClick={() => {
             setFavorites(toggleFavorite(favorites, place));
             notify("Favorite updated.");
@@ -3595,7 +3642,7 @@ function SlideMenu() {
     ["routeDiscovery", "Routes"],
     ["nearby", "Nearby"],
     ["layover", "Layover"],
-    ["favorites", "Saved Gems"]
+    ["favorites", "Saved"]
   ];
 
   function navigate(view) {
@@ -4136,8 +4183,8 @@ function locationPoint(location, userLocation, index) {
     { x: 62, y: 24 },
     { x: 20, y: 48 }
   ];
-  const latDelta = location.coordinates?.lat - userLocation.lat;
-  const lngDelta = location.coordinates?.lng - userLocation.lng;
+  const latDelta = location.coordinates?.lat - userLocation?.lat;
+  const lngDelta = location.coordinates?.lng - userLocation?.lng;
   if (!Number.isFinite(latDelta) || !Number.isFinite(lngDelta)) return fallbackPoints[index % fallbackPoints.length];
   return {
     x: clamp(50 + lngDelta * 900, 16, 84),
@@ -4162,7 +4209,7 @@ function formatMeters(value) {
 }
 
 function sourceLabel(place = {}) {
-  if (place.isDemo || /demo/i.test(place.provider || place.source || "")) return "Demo";
+  if (place.isSample || /sample/i.test(place.provider || place.source || "")) return "Sample";
   const raw = String(place.provider || place.source || place.dataSource || "");
   if (/google/i.test(raw)) return "Google Maps";
   if (/foursquare/i.test(raw)) return "Foursquare";
@@ -4171,7 +4218,7 @@ function sourceLabel(place = {}) {
 }
 
 function confidenceLabel(place = {}) {
-  if (place.isDemo) return "Demo";
+  if (place.isSample) return "Sample";
   if (place.confidence) return String(place.confidence);
   const rating = Number(place.rating || 0);
   const count = Number(place.ratingCount || place.userRatingCount || 0);
@@ -4336,14 +4383,14 @@ function osmStaticMapPreview(point) {
   return `https://staticmap.openstreetmap.de/staticmap.php?center=${point.lat},${point.lng}&zoom=15&size=640x360&markers=${point.lat},${point.lng},red-pushpin`;
 }
 
-function createDemoRouteResults() {
+function createSampleRouteResults() {
   const locations = [
     {
-      id: "demo-riverside-viewpoint",
-      name: "Demo: Riverside Viewpoint",
+      id: "sample-riverside-viewpoint",
+      name: "Sample: Riverside Viewpoint",
       category: "Cinematic views",
       type: "viewpoint",
-      description: "A clearly labeled demo stop showing how verified route cards will look with source and confidence badges.",
+      description: "A sample stop showing how verified route cards look with source and confidence badges.",
       coordinates: { lat: 50.7548, lng: 7.0747 },
       distance: 1200,
       detourDistance: "+12 min detour",
@@ -4352,18 +4399,18 @@ function createDemoRouteResults() {
       ratingCount: 86,
       isOpenAtArrival: true,
       isHiddenGem: true,
-      provider: "Demo",
-      source: "Demo",
-      confidence: "Demo",
-      isDemo: true,
-      tags: ["Demo", "Cinematic", "Verified card pattern"]
+      provider: "Sample",
+      source: "Sample",
+      confidence: "Sample",
+      isSample: true,
+      tags: ["Sample", "Cinematic", "Verified card pattern"]
     },
     {
-      id: "demo-local-food-stop",
-      name: "Demo: Local Food Stop",
+      id: "sample-local-food-stop",
+      name: "Sample: Local Food Stop",
       category: "Food stops",
       type: "food",
-      description: "Demo food card with a safe return estimate. Production mode requires a provider-backed place.",
+      description: "Sample food card with a safe return estimate. Production mode requires a provider-backed place.",
       coordinates: { lat: 50.8291, lng: 7.0447 },
       distance: 2100,
       detourDistance: "+18 min detour",
@@ -4372,18 +4419,18 @@ function createDemoRouteResults() {
       ratingCount: 124,
       isOpenAtArrival: null,
       isHiddenGem: false,
-      provider: "Demo",
-      source: "Demo",
-      confidence: "Demo",
-      isDemo: true,
-      tags: ["Demo", "Food", "Return-friendly"]
+      provider: "Sample",
+      source: "Sample",
+      confidence: "Sample",
+      isSample: true,
+      tags: ["Sample", "Food", "Return-friendly"]
     },
     {
-      id: "demo-heritage-garden",
-      name: "Demo: Heritage Garden",
+      id: "sample-heritage-garden",
+      name: "Sample: Heritage Garden",
       category: "Nature escape",
       type: "nature",
-      description: "A demo nature stop used only to preview the experience without claiming real provider availability.",
+      description: "A sample nature stop used only to preview the experience without claiming provider verification.",
       coordinates: { lat: 50.902, lng: 6.9845 },
       distance: 900,
       detourDistance: "+9 min detour",
@@ -4392,16 +4439,16 @@ function createDemoRouteResults() {
       ratingCount: 54,
       isOpenAtArrival: true,
       isHiddenGem: true,
-      provider: "Demo",
-      source: "Demo",
-      confidence: "Demo",
-      isDemo: true,
-      tags: ["Demo", "Nature", "Short detour"]
+      provider: "Sample",
+      source: "Sample",
+      confidence: "Sample",
+      isSample: true,
+      tags: ["Sample", "Nature", "Short detour"]
     }
   ];
 
   return {
-    isDemo: true,
+    isSample: true,
     total: locations.length,
     route: {
       distance: "31 km",

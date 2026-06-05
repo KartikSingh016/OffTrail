@@ -29,7 +29,7 @@ export default function HomePage({ initialView = null, initialContentPage = null
         <title>OffTrail | Verified Hidden-Gem Route Planner</title>
         <meta
           name="description"
-          content="Discover verified hidden gems along your route using real map/provider data. No synthetic routes, no fake places."
+          content="Discover verified hidden gems along your route using provider-backed map data, practical detour estimates, and clear source labels."
         />
         <link rel="canonical" href="https://off-trail-flax.vercel.app/" />
         <meta property="og:title" content="OffTrail | Verified Hidden-Gem Route Planner" />

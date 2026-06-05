@@ -1,7 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,500&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital@1&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap");
 
 :root {
   --background: 0 0% 0%;
@@ -45,6 +42,34 @@ select,
 textarea,
 a {
   font: inherit;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+.font-display-lg,
+.font-headline-lg,
+.font-headline-lg-mobile,
+.stitch-system-brand,
+.stitch-wordmark {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+.font-label-caps,
+.stitch-eyebrow,
+.section-kicker,
+.wilderness-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
 }
 
 button {
@@ -1016,6 +1041,7 @@ button:disabled:hover {
 }
 
 .place-field {
+  position: relative;
   z-index: 3;
 }
 
@@ -7015,7 +7041,10 @@ img {
   --gf-text: #ffffff;
   --gf-muted: rgba(255, 255, 255, 0.72);
   min-height: 100svh;
-  font-family: "Poppins", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+  font-family: var(--font-body);
   background: #0c0f0f;
 }
 
@@ -9368,7 +9397,7 @@ img {
   }
 }
 
-/* Stitch prototype design system: copied token values and active route/results structure. */
+/* OffTrail route/results interface tokens. */
 :root {
   --ot-tertiary-fixed: #98f2f1;
   --ot-background: #121413;
@@ -9666,6 +9695,11 @@ img {
   line-height: 1.6;
 }
 
+.stitch-mission-card,
+.hero-route-planner {
+  overflow: visible;
+}
+
 .stitch-route-fields {
   display: grid;
   gap: 0.9rem;
@@ -9702,6 +9736,16 @@ img {
 .stitch-route-fields select:focus {
   border-color: rgba(180, 203, 198, 0.58);
   box-shadow: 0 0 0 3px rgba(180, 203, 198, 0.1);
+}
+
+.stitch-route-fields .field-error,
+.hero-route-planner .field-error {
+  color: #ffdad6;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .stitch-radius-mini {
@@ -11564,7 +11608,7 @@ img {
   justify-content: flex-start;
 }
 
-.demo-link {
+.sample-link {
   min-height: 3rem;
   color: #98f2f1;
   text-decoration: underline;
@@ -11572,7 +11616,7 @@ img {
   font-weight: 700;
 }
 
-.hero-demo-note {
+.hero-sample-note {
   margin: 0 !important;
   color: rgba(194, 200, 197, 0.72) !important;
   font-size: 0.92rem !important;
@@ -11693,7 +11737,7 @@ img {
   color: #98f2f1;
 }
 
-.demo-banner {
+.sample-banner {
   color: #98f2f1;
   background: rgba(124, 213, 213, 0.08);
   border: 1px solid rgba(124, 213, 213, 0.2);
@@ -11707,7 +11751,7 @@ img {
   font-weight: 800;
 }
 
-.demo-data-warning {
+.sample-data-warning {
   display: grid;
   gap: 0.35rem;
   padding: 1rem;
@@ -11720,18 +11764,18 @@ img {
   box-shadow: 0 0 0 1px rgba(255, 218, 214, 0.08), 0 16px 48px rgba(147, 0, 10, 0.22);
 }
 
-.demo-data-warning strong {
+.sample-data-warning strong {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.demo-data-warning span {
+.sample-data-warning span {
   color: #e3e2e1;
   line-height: 1.45;
 }
 
-.stitch-gem-result.is-demo,
-.stitch-reco-card.is-demo {
+.stitch-gem-result.is-sample,
+.stitch-reco-card.is-sample {
   border-style: dashed;
   border-color: rgba(255, 218, 214, 0.48);
   background:
@@ -11739,7 +11783,7 @@ img {
     rgba(18, 20, 19, 0.62);
 }
 
-.demo-card-watermark {
+.sample-card-watermark {
   position: absolute;
   z-index: 3;
   inset: 0.75rem auto auto 0.75rem;
@@ -12048,7 +12092,7 @@ img {
   }
 
   .hero-planner-actions > button,
-  .hero-planner-actions > .demo-link {
+  .hero-planner-actions > .sample-link {
     width: 100%;
   }
 
