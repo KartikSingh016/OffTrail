@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -43,7 +43,8 @@ const videoUrl =
 
 const thumbnailUrl = offTrailPlaceholderImage("Verified map source", "No provider photo available");
 
-const publicGoogleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+const paidMapPreviewsEnabled = process.env.NEXT_PUBLIC_OFFTRAIL_ENABLE_PAID_MAP_PREVIEWS === "true";
+const publicGoogleMapsApiKey = paidMapPreviewsEnabled ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "" : "";
 
 const intelligenceMapUrl = "/assets/map-preview.webp";
 const intelligencePreviewUrl = "/assets/map-preview.webp";
@@ -483,7 +484,7 @@ function LandingPage() {
   }
 
   function planRoute(event) {
-    event.preventDefault();
+    event?.preventDefault();
     setSubmitted(true);
     if (!from.trim() || !to.trim()) {
       notify("Add both a starting point and destination first.", "error");
@@ -536,260 +537,228 @@ function LandingPage() {
     navigateTo("routeDiscovery");
   }
 
+  const waypointCards = [
+    ["Riverside Viewpoint", "12 min from route - Best for sunset photos", "VERIFIED", "verified"],
+    ["Quiet Local Cafe", "+18 min detour - Open now with easy return", "FOOD GEM", "food"],
+    ["Small Heritage Garden", "+9 min detour - Quiet nature escape", "NATURE", "nature"]
+  ];
+  const featureCards = [
+    [Navigation, "Explore Nearby", "Discovery based on current location or searching a specific city.", "Scan nearby", exploreNearMe],
+    [MapPin, "Stopover Nearby", "Use Nearby at stations, airports, or cities to find verified places around a short stop.", "Search nearby", exploreNearMe],
+    [Heart, "Saved Gems", "Your personal map and notes, kept safe and accessible on device.", "View saved", () => navigateTo("favorites")]
+  ];
+
   return (
-    <section className="stitch-page production-home" aria-label="OffTrail route discovery">
-      <header className="stitch-topnav">
-        <a className="stitch-wordmark" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>OffTrail</a>
-        <nav className="stitch-navlinks" aria-label="Primary navigation">
+    <section className="stitch-v2-page" aria-label="OffTrail intelligent route discovery">
+      <header className="stitch-v2-nav">
+        <a className="stitch-v2-brand" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>OffTrail</a>
+        <nav className="stitch-v2-links" aria-label="Primary navigation">
           <a className="is-active" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>Explore</a>
-          <a href={viewHref("routeDiscovery")} onClick={(event) => handleViewNavigation(event, navigateTo, "routeDiscovery")}>Routes</a>
           <a href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
-          <a href={viewHref("layover")} onClick={(event) => handleViewNavigation(event, navigateTo, "layover")}>Layover</a>
           <a href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved</a>
         </nav>
-        <div className="stitch-nav-actions">
-          <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={21} /></button>
-          <div className="account-wrap">
-            <button type="button" onClick={() => (auth.isAuthenticated ? setAccountOpen(!accountOpen) : setModal("auth"))} aria-label="Account">
-              <User size={22} />
-            </button>
-            {accountOpen && <AccountDropdown />}
-          </div>
+        <div className="stitch-v2-actions">
+          <button type="button" aria-label="Search nearby" onClick={exploreNearMe}><Search size={18} /></button>
+          <button type="button" className="stitch-v2-signin" onClick={() => (auth.isAuthenticated ? setAccountOpen(!accountOpen) : setModal("auth"))}>
+            {auth.isAuthenticated ? "Account" : "Sign In"}
+          </button>
+          <button className="stitch-v2-menu" type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={19} /></button>
+          {accountOpen && <AccountDropdown />}
         </div>
       </header>
 
-      <main className="stitch-main">
-        <section className="stitch-hero">
-          <div className="stitch-hero-bg" aria-hidden="true">
-            <img src={stitchHeroUrl} alt="" onError={hideBrokenImage} />
-            <div />
-          </div>
-
-          <div className="stitch-hero-grid">
-            <div className="stitch-hero-copy">
-              <span className="stitch-eyebrow"><i /> INTELLIGENT EXPLORATION</span>
+      <main className="stitch-v2-main">
+        <section className="stitch-v2-hero">
+          <div className="stitch-v2-container stitch-v2-hero-grid">
+            <div className="stitch-v2-hero-copy">
+              <span className="stitch-v2-kicker">__Intelligent Exploration</span>
               <h1>
                 Discover verified <br />
-                <em>hidden gems</em> along your route
+                <em>hidden gems</em> along your route.
               </h1>
               <p>
-                Plan a route and find real, map-verified stops for food, views, nature,
-                culture, nightlife, and layovers.
+                Plan a route and find real, map-verified stops for food, views, nature, and culture.
+                Powered by live provider data.
               </p>
-              <p className="hero-trust-line">
-                Powered by provider-backed map data with clear source labels.
-              </p>
-              <form className="hero-route-planner stitch-glass" ref={plannerRef} onSubmit={planRoute} noValidate>
-                <div className="hero-planner-head">
-                  <span>Route planner</span>
-                  <strong>Verified stops only</strong>
-                </div>
-                <div className="hero-planner-grid">
-                  <PlaceInput
-                    label="From"
-                    value={from}
-                    onChange={setFrom}
-                    placeholder="Starting point, station, city, or address"
-                    error={fromError}
-                    inputRef={fromInputRef}
-                  />
-                  <PlaceInput
-                    label="To"
-                    value={to}
-                    onChange={setTo}
-                    placeholder="Destination"
-                    error={toError}
-                  />
-                  <label>
-                    <span>Travel mode</span>
-                    <select value={travelMode} onChange={(event) => setTravelMode(event.target.value)}>
-                      {travelModeOptions.map((option) => <option key={option}>{option}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Detour tolerance</span>
-                    <select value={detour} onChange={(event) => setDetour(event.target.value)}>
-                      {detourOptions.map((option) => <option key={option.label}>{option.label}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Travel vibe (what to find)</span>
-                    <select value={vibe} onChange={(event) => setVibe(event.target.value)}>
-                      {heroVibeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Route style (how to prioritize)</span>
-                    <select value={routeStyle} onChange={(event) => setRouteStyle(event.target.value)}>
-                      {routePersonalityOptions.map((option) => <option key={option}>{option}</option>)}
-                    </select>
-                  </label>
-                </div>
-                {sameRouteError && <p className="hero-form-error" role="alert">{sameRouteError}</p>}
-                <div className="hero-planner-actions">
-                  <button className="stitch-primary" type="submit">
-                    Plan My Route <ArrowRight size={18} />
-                  </button>
-                  <button className="stitch-secondary stitch-glass" type="button" onClick={exploreNearMe}>
-                    Explore Near Me
-                  </button>
-                  <button className="sample-link" type="button" onClick={trySampleRoute}>
-                    Try sample route
-                  </button>
-                </div>
-                <p className="hero-sample-note">
-                  Sample routes are labeled and kept separate from verified results.
-                </p>
-              </form>
-              <div className="stitch-hero-actions">
-                <button className="stitch-primary" type="button" onClick={focusPlanner}>
-                  Plan a Route <ArrowRight size={18} />
-                </button>
-                <button className="stitch-secondary stitch-glass" type="button" onClick={exploreNearMe}>
-                  Explore Near Me
-                </button>
-              </div>
-              <div className="stitch-stats">
-                <div>
-                  <small>ROUTE DATA</small>
-                  <strong>Verified</strong>
-                  <span>REAL MAP SOURCES</span>
-                </div>
-                <div>
-                  <small>RESULTS</small>
-                  <strong>Provider-backed</strong>
-                  <span>ONLY PROVIDER-BACKED STOPS</span>
-                </div>
-                <div>
-                  <small>SOURCES</small>
-                  <strong>Live maps</strong>
-                  <span>GOOGLE / FOURSQUARE / OSM</span>
-                </div>
+              <div className="stitch-v2-cta-row">
+                <button className="stitch-v2-primary" type="button" onClick={() => planRoute()}>Plan My Route</button>
+                <button className="stitch-v2-secondary" type="button" onClick={exploreNearMe}>Explore Near Me</button>
               </div>
             </div>
 
-            <div className="stitch-map-column">
-              <div className="stitch-map-ghost stitch-glass" aria-hidden="true" />
-              <div className="stitch-map-card stitch-glass">
-                <img src={stitchMapUrl} alt="" onError={hideBrokenImage} />
-                <svg viewBox="0 0 400 400" aria-hidden="true">
-                  <defs>
-                    <filter id="stitchGlow">
-                      <feGaussianBlur result="coloredBlur" stdDeviation="3" />
-                      <feMerge>
-                        <feMergeNode in="coloredBlur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <path className="stitch-route-light" d="M50,350 C150,300 100,200 300,150 S350,50 350,50" filter="url(#stitchGlow)" />
-                </svg>
-                <div className="stitch-floating-gem stitch-gem-a">
-                  <i />
-                  <span className="stitch-glass">Verified waypoint</span>
-                </div>
-                <div className="stitch-floating-gem stitch-gem-b">
-                  <i />
-                  <span className="stitch-glass">Verified stop</span>
-                </div>
-                <div className="stitch-hud top-left">Checking real routes...</div>
-                <div className="stitch-hud bottom-right">Provider-backed stops only</div>
-                <div className="stitch-hud-dots"><span /><span /><span /></div>
-                <div className="preview-stop-list" aria-label="Verified route preview">
-                  {previewStops.map((stop) => (
-                    <article className="preview-stop" key={stop.name}>
-                      <strong>{stop.name}</strong>
-                      <span>{stop.meta} - {stop.reason}</span>
-                      <small>{stop.source}</small>
-                      <em>{stop.status}</em>
-                    </article>
+            <form className="stitch-v2-planner-card" ref={plannerRef} onSubmit={planRoute} noValidate>
+              <div className="stitch-v2-planner-head">
+                <h2><Route size={15} /> Route Planner</h2>
+                <span>Verified stops only</span>
+              </div>
+              <div className="stitch-v2-place-grid">
+                <PlaceInput label="From" value={from} onChange={setFrom} placeholder="London, UK" error={fromError} inputRef={fromInputRef} />
+                <PlaceInput label="To" value={to} onChange={setTo} placeholder="Edinburgh, UK" error={toError} />
+              </div>
+              {sameRouteError && <p className="stitch-v2-form-error" role="alert">{sameRouteError}</p>}
+              <div className="stitch-v2-control-block">
+                <span>Travel Mode</span>
+                <div className="stitch-v2-chip-row" role="group" aria-label="Travel mode">
+                  {travelModeOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={travelMode === option ? "is-active" : ""}
+                      aria-pressed={travelMode === option}
+                      onClick={() => setTravelMode(option)}
+                    >
+                      {option === "Train" && <Navigation size={13} />}
+                      {option === "Car" && <MapIcon size={13} />}
+                      {option === "Walking" && <MapPin size={13} />}
+                      {option === "Cycling" && <Compass size={13} />}
+                      {option}
+                    </button>
                   ))}
                 </div>
               </div>
+              <div className="stitch-v2-bottom-grid">
+                <label>
+                  <span>Detour Tolerance</span>
+                  <select value={detour} onChange={(event) => setDetour(event.target.value)}>
+                    {detourOptions.map((option) => <option key={option.label}>{option.label}</option>)}
+                  </select>
+                </label>
+                <div className="stitch-v2-control-block">
+                  <span>Travel Vibe</span>
+                  <div className="stitch-v2-mini-tags" role="group" aria-label="Travel vibe">
+                    {[
+                      ["nature", "Nature"],
+                      ["food", "Food"],
+                      ["viewpoint", "Cinematic"]
+                    ].map(([key, label]) => (
+                      <button key={key} type="button" className={vibe === key ? "is-active" : ""} aria-pressed={vibe === key} onClick={() => setVibe(key)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section className="stitch-v2-waypoints">
+          <div className="stitch-v2-container">
+            <div className="stitch-v2-section-head">
+              <div>
+                <span className="stitch-v2-kicker">__Live Visualization</span>
+                <h2>Verified Waypoints</h2>
+              </div>
+              <p>OffTrail maps real-time data against your route to find high-confidence stops that actually exist and are open.</p>
+            </div>
+            <div className="stitch-v2-visual-grid">
+              <div className="stitch-v2-map-visual">
+                <video className="stitch-v2-map-video" src={videoUrl} autoPlay loop muted playsInline poster={wildernessHeroUrl} aria-hidden="true" />
+                <div className="stitch-v2-dot-grid" aria-hidden="true" />
+                <svg viewBox="0 0 800 600" aria-hidden="true">
+                  <path className="stitch-v2-route-path" d="M100 500 Q 200 450 300 480 T 500 400 T 700 100" fill="none" />
+                  <circle className="stitch-v2-pulse" cx="300" cy="480" r="6" />
+                  <circle className="stitch-v2-pulse is-ochre" cx="500" cy="400" r="6" />
+                </svg>
+                <div className="stitch-v2-map-status">
+                  <CheckCircle size={18} />
+                  <div>
+                    <strong>Checking real routes...</strong>
+                    <span>Provider-backed stops only</span>
+                  </div>
+                </div>
+              </div>
+              <div className="stitch-v2-waypoint-list">
+                {waypointCards.map(([name, copy, badge, tone]) => (
+                  <article className={`stitch-v2-waypoint-card is-${tone}`} key={name}>
+                    <div>
+                      <h3>{name}</h3>
+                      <span>{badge}</span>
+                    </div>
+                    <p>{copy}</p>
+                    <small><MapIcon size={13} /> {tone === "verified" ? "Verified by OSM / configured providers" : tone === "food" ? "Provider source shown on result" : "Confidence label included"}</small>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="stitch-process-section" aria-label="How OffTrail works">
-          <div className="section-kicker">How it works</div>
-          <div className="process-grid">
-            {[
-              ["1", "Enter your route", "Start with a real origin and destination."],
-              ["2", "Choose your travel vibe", `Pick filters like ${selectedVibe.label.toLowerCase()} or food stops.`],
-              ["3", "Get verified stops", "OffTrail searches near your path and labels the data source."],
-              ["4", "Save and share gems", "Bookmark places locally and build your personal map."]
-            ].map(([step, title, copy]) => (
-              <article className="stitch-glass process-card" key={step}>
-                <span>{step}</span>
-                <h2>{title}</h2>
+        <section className="stitch-v2-features">
+          <div className="stitch-v2-container stitch-v2-feature-grid">
+            {featureCards.map(([Icon, title, copy, action, onClick]) => (
+              <button className="stitch-v2-feature-card" type="button" key={title} onClick={onClick}>
+                <Icon size={22} />
+                <h3>{title}</h3>
                 <p>{copy}</p>
-              </article>
+                <strong>{action} <ArrowRight size={13} /></strong>
+              </button>
             ))}
           </div>
         </section>
 
-        <section className="stitch-feature-grid" aria-label="OffTrail capabilities">
-          <button className="stitch-feature stitch-glass" type="button" onClick={() => navigateTo("routeDiscovery")}>
-            <span><Route size={28} /></span>
-            <h3>Route Intelligence</h3>
-            <p>Find places near your actual route, not random spots far away.</p>
-            <strong>Open route planner <ArrowRight size={15} /></strong>
-          </button>
-          <button className="stitch-feature stitch-glass" type="button" onClick={exploreNearMe}>
-            <span><Navigation size={28} /></span>
-            <h3>Explore Around You</h3>
-            <p>Use your current location or search a city to discover nearby verified gems.</p>
-            <strong>Scan nearby <ArrowRight size={15} /></strong>
-          </button>
-          <button className="stitch-feature stitch-glass" type="button" onClick={() => navigateTo("layover")}>
-            <span><Clock size={28} /></span>
-            <h3>Layover Discovery</h3>
-            <p>Enter a station or airport and your available time. OffTrail only shows stops that can fit the window.</p>
-            <strong>Plan a layover <ArrowRight size={15} /></strong>
-          </button>
-          <button className="stitch-feature stitch-glass" type="button" onClick={() => navigateTo("favorites")}>
-            <span><Bookmark size={28} /></span>
-            <h3>Saved Gems</h3>
-            <p>Bookmark places, create a personal travel map, and keep notes on this device.</p>
-            <strong>View saved <ArrowRight size={15} /></strong>
-          </button>
-        </section>
-
-        <section className="trust-section stitch-glass" aria-label="Data trust">
-          <div>
-            <span className="section-kicker">Verified by design</span>
-            <h2>Results are shown only when source data is available.</h2>
-            <p>
-              OffTrail uses provider-backed route and place data, shows source and confidence labels,
-              and stops the flow with a clear error when a route or place cannot be verified.
-            </p>
-          </div>
-          <div className="trust-grid">
-            {[
-              ["Real provider data only", "Every production card needs a map/source signal."],
-              ["Clear failure states", "If providers fail, OffTrail says so instead of inventing stops."],
-              ["Open-hours aware", "Cards label open, closed, or hours unavailable."],
-              ["Distance confidence", "Route, detour, and source labels stay visible on results."]
-            ].map(([title, copy]) => (
-              <article key={title}>
-                <CheckCircle size={18} />
-                <strong>{title}</strong>
-                <span>{copy}</span>
-              </article>
-            ))}
+        <section className="stitch-v2-trust">
+          <div className="stitch-v2-container stitch-v2-trust-grid">
+            <div>
+              <span className="stitch-v2-kicker">__OffTrail Standard</span>
+              <h2>Verified by Design</h2>
+              <p>Results are shown only when source data is available. No ghost locations, no outdated markers.</p>
+              <div className="stitch-v2-trust-points">
+                {[
+                  [CheckCircle, "Real provider data only", "Production cards require a live map source signal."],
+                  [XCircle, "Clear failure states", "If data fails, we say so instead of inventing stops."],
+                  [History, "Open-hours aware", "Always clearly marked open, closed, or unknown status."],
+                  [Timer, "Distance confidence", "Verified detour times based on current traffic/mode."]
+                ].map(([Icon, title, copy]) => (
+                  <article key={title}>
+                    <Icon size={18} />
+                    <div>
+                      <h3>{title}</h3>
+                      <p>{copy}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+            <aside className="stitch-v2-provider-card">
+              <div>
+                <span><CheckCircle size={24} /></span>
+                <div>
+                  <h3>OSM Linked / Provider Ready</h3>
+                  <p>No-bill mode until paid providers are enabled</p>
+                </div>
+              </div>
+              <p>
+                "OffTrail uses provider-backed route and place data, shows source and confidence labels,
+                and stops the flow when a route cannot be verified."
+              </p>
+            </aside>
           </div>
         </section>
 
-        <section className="stitch-cta stitch-glass">
-          <img src={stitchCtaUrl} alt="" onError={hideBrokenImage} />
+        <section className="stitch-v2-final">
           <h2>Ready to find your next hidden stop?</h2>
-          <p>Start with a real route. OffTrail will only show stops it can verify.</p>
+          <p>Start with a real route. OffTrail will only show stops it can verify with absolute certainty.</p>
           <div>
-            <button className="stitch-primary" type="button" onClick={focusPlanner}>Plan a Route</button>
-            <button className="stitch-secondary stitch-glass" type="button" onClick={() => navigateTo("favorites")}>View Saved Gems</button>
+            <button className="stitch-v2-primary" type="button" onClick={focusPlanner}>Start Planning</button>
+            <button className="stitch-v2-secondary" type="button" onClick={() => navigateTo("favorites")}>View Saved Gems</button>
           </div>
         </section>
       </main>
+
+      <footer className="stitch-v2-footer">
+        <div className="stitch-v2-container">
+          <div>
+            <strong>OffTrail</strong>
+            <p>Precision route intelligence for travelers who seek depth and precision over superficial trends.</p>
+            <small>© 2026 OffTrail Intelligence. All rights reserved.</small>
+          </div>
+          <nav aria-label="Footer navigation">
+            <a href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
+            <a href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved Gems</a>
+          </nav>
+        </div>
+      </footer>
     </section>
   );
 }
@@ -839,7 +808,6 @@ function WildernessNavbar({ active }) {
   const { setView, setModal, setMenuOpen, auth, accountOpen, setAccountOpen } = useOffTrail();
   const links = [
     ["explore", "Explore", "home"],
-    ["routes", "Routes", "routeDiscovery"],
     ["nearby", "Nearby", "nearby"],
     ["saved", "Saved", "favorites"]
   ];
@@ -910,9 +878,7 @@ function MobileBottomNav({ active }) {
   const { setView } = useOffTrail();
   const items = [
     ["explore", "Explore", "home", Compass],
-    ["routes", "Routes", "routeDiscovery", Route],
     ["nearby", "Nearby", "nearby", MapPin],
-    ["layover", "Layover", "layover", Clock],
     ["saved", "Saved", "favorites", Gem]
   ];
 
@@ -1289,6 +1255,11 @@ function PlannerModal() {
 
 function PlaceInput({ label, value, onChange, placeholder, error = "", valid = false, disabled = false, inputRef = null }) {
   const [suggestions, setSuggestions] = useState([]);
+  const [focused, setFocused] = useState(false);
+  const reactId = useId();
+  const fieldId = `place-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${reactId.replace(/:/g, "")}`;
+  const errorId = `${fieldId}-error`;
+  const suggestionsId = `${fieldId}-suggestions`;
 
   useEffect(() => {
     if (!value || value.length < 2) {
@@ -1313,15 +1284,34 @@ function PlaceInput({ label, value, onChange, placeholder, error = "", valid = f
     };
   }, [value]);
 
+  function chooseSuggestion(suggestion) {
+    onChange(suggestion.label);
+    setSuggestions([]);
+    setFocused(false);
+  }
+
   return (
     <label className={`field place-field ${error ? "is-invalid" : valid ? "is-valid" : ""}`}>
       <span>{label}</span>
-      <input ref={inputRef} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" aria-invalid={Boolean(error)} disabled={disabled} />
-      {error && <span className="field-error" role="alert">{error}</span>}
-      {suggestions.length > 0 && (
-        <div className="suggestion-list liquid-glass">
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => window.setTimeout(() => setFocused(false), 120)}
+        placeholder={placeholder}
+        autoComplete="off"
+        aria-autocomplete="list"
+        aria-controls={suggestions.length ? suggestionsId : undefined}
+        aria-describedby={error ? errorId : undefined}
+        aria-invalid={Boolean(error)}
+        disabled={disabled}
+      />
+      {error && <span className="field-error" id={errorId} role="alert">{error}</span>}
+      {focused && suggestions.length > 0 && (
+        <div className="suggestion-list liquid-glass" id={suggestionsId} role="listbox" aria-label={`${label} suggestions`}>
           {suggestions.map((suggestion) => (
-            <button key={suggestion.id} type="button" onClick={() => onChange(suggestion.label)}>
+            <button key={suggestion.id} type="button" role="option" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseSuggestion(suggestion)}>
               {suggestion.label}
             </button>
           ))}
@@ -1496,7 +1486,7 @@ function JourneyRouteDiscoveryPage() {
   }
 
   return (
-    <StitchJourneyResultsPage
+    <RouteMapPlannerPage
       origin={origin}
       setOrigin={setOrigin}
       destination={destination}
@@ -1529,6 +1519,361 @@ function JourneyRouteDiscoveryPage() {
       setView={setView}
       sampleMode={Boolean(routeState.sampleMode || results?.isSample)}
     />
+  );
+}
+
+function compactMapLabel(value, fallback = "Place") {
+  const clean = String(value || fallback).split(",")[0].trim() || fallback;
+  return clean.length > 24 ? `${clean.slice(0, 22)}...` : clean;
+}
+
+function IllustratedMapLabel({ className, label, width = 170 }) {
+  return (
+    <g className={`irm-map-label ${className}`}>
+      <rect x={-width / 2} y="-24" width={width} height="42" rx="10" />
+      <text x="0" y="4" textAnchor="middle">{label}</text>
+    </g>
+  );
+}
+
+function IllustratedTree({ x, y, scale = 1 }) {
+  return (
+    <g className="irm-tree" transform={`translate(${x} ${y}) scale(${scale})`}>
+      <rect x="-3" y="18" width="6" height="18" rx="2" />
+      <path d="M0 -18 L-18 20 H18 Z" />
+      <path d="M0 -34 L-14 5 H14 Z" />
+    </g>
+  );
+}
+
+function IllustratedMountain({ x, y, scale = 1 }) {
+  return (
+    <g className="irm-mountain" transform={`translate(${x} ${y}) scale(${scale})`}>
+      <path d="M-70 48 L-26 -48 L34 48 Z" />
+      <path d="M-4 48 L42 -36 L84 48 Z" />
+      <path className="snow" d="M-35 -28 L-26 -48 L-13 -24 L-24 -29 Z" />
+      <path className="snow" d="M32 -17 L42 -36 L55 -12 L42 -18 Z" />
+    </g>
+  );
+}
+
+function IllustratedCastle({ x, y, scale = 1 }) {
+  return (
+    <g className="irm-castle" transform={`translate(${x} ${y}) scale(${scale})`}>
+      <rect x="-58" y="-2" width="116" height="58" rx="6" />
+      <rect x="-70" y="-34" width="28" height="90" rx="5" />
+      <rect x="42" y="-34" width="28" height="90" rx="5" />
+      <path d="M-70 -34 L-56 -62 L-42 -34 Z M42 -34 L56 -62 L70 -34 Z M-22 -2 L0 -42 L22 -2 Z" />
+      {[-40, -16, 16, 40].map((wx) => <rect className="window" x={wx} y="18" width="8" height="12" rx="2" key={wx} />)}
+    </g>
+  );
+}
+
+function IllustratedWaterfall({ x, y, scale = 1 }) {
+  return (
+    <g className="irm-waterfall" transform={`translate(${x} ${y}) scale(${scale})`}>
+      <path className="rock" d="M-55 -24 C-28 -56 32 -50 56 -16 C30 -4 10 8 -5 34 C-30 26 -52 8 -55 -24Z" />
+      <path className="fall-dark" d="M-10 -30 C16 -4 -6 24 22 54" />
+      <path className="fall" d="M-12 -30 C12 -4 -9 24 18 54" />
+      <ellipse className="pool" cx="23" cy="64" rx="42" ry="15" />
+    </g>
+  );
+}
+
+function IllustratedRouteMap({ startLabel, endLabel }) {
+  const start = compactMapLabel(startLabel, "London");
+  const end = compactMapLabel(endLabel, "Edinburgh");
+  const trees = [
+    [315, 166, 0.7], [370, 150, 0.55], [450, 188, 0.6], [296, 314, 0.65], [380, 320, 0.75],
+    [660, 370, 0.65], [760, 410, 0.62], [290, 515, 0.75], [390, 566, 0.7], [700, 610, 0.7],
+    [790, 670, 0.55], [250, 840, 0.62], [360, 910, 0.72], [520, 990, 0.6], [780, 1030, 0.7],
+    [442, 1180, 0.6], [570, 1250, 0.7], [850, 1235, 0.56], [270, 1230, 0.72], [720, 1380, 0.62]
+  ];
+  const waves = [
+    [118, 112], [1010, 174], [92, 356], [1040, 520], [100, 724], [1010, 845], [154, 1125], [992, 1270],
+    [214, 72], [910, 74], [104, 494], [1050, 1006]
+  ];
+
+  return (
+    <svg className="illustrated-route-map" viewBox="0 0 1100 1500" role="img" aria-label={`Illustrated route map from ${start} to ${end}`}>
+      <defs>
+        <filter id="irm-shadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="10" stdDeviation="8" floodColor="#14343d" floodOpacity="0.24" />
+        </filter>
+        <linearGradient id="irm-sea" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#aee4ec" />
+          <stop offset="100%" stopColor="#67c7dc" />
+        </linearGradient>
+        <linearGradient id="irm-land" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor="#9fcf69" />
+          <stop offset="50%" stopColor="#77b651" />
+          <stop offset="100%" stopColor="#b7dc72" />
+        </linearGradient>
+      </defs>
+
+      <rect width="1100" height="1500" fill="url(#irm-sea)" />
+
+      {waves.map(([x, y], index) => (
+        <path className="irm-wave" d="M0 0 Q18 -10 36 0 T72 0" transform={`translate(${x} ${y})`} key={index} />
+      ))}
+
+      <g className="irm-compass" transform="translate(98 94)">
+        <circle r="42" />
+        <path d="M0 -70 L12 -12 L70 0 L12 12 L0 70 L-12 12 L-70 0 L-12 -12 Z" />
+        <text x="0" y="-84">N</text><text x="0" y="103">S</text><text x="-101" y="5">W</text><text x="91" y="5">E</text>
+      </g>
+
+      <g className="irm-boat" transform="translate(1010 1170) scale(1.1)">
+        <path d="M-52 10 H54 L36 34 H-32 Z" />
+        <rect x="-24" y="-20" width="42" height="28" rx="4" />
+        <circle cx="-24" cy="18" r="4" /><circle cx="0" cy="18" r="4" /><circle cx="24" cy="18" r="4" />
+      </g>
+      <g className="irm-sail" transform="translate(1006 735)">
+        <path d="M0 -62 L0 38" />
+        <path d="M2 -55 L52 20 H2 Z" />
+        <path d="M-4 -34 L-42 26 H-4 Z" />
+        <path d="M-52 38 H60" />
+      </g>
+      <g className="irm-whale" transform="translate(132 492)">
+        <path d="M-54 14 C-20 -24 43 -24 78 6 C46 46 -22 42 -54 14Z" />
+        <path d="M70 8 L100 -16 L94 20 Z" />
+        <circle cx="-24" cy="4" r="4" />
+        <path d="M-75 -44 Q-58 -66 -41 -44 M-88 -26 Q-66 -42 -46 -26" />
+      </g>
+
+      <path className="irm-island-back" d="M508 48 C688 42 828 140 848 308 C1000 362 1014 530 936 650 C1036 790 990 978 842 1036 C896 1210 736 1408 514 1422 C300 1436 176 1320 210 1164 C76 1046 98 854 210 772 C92 642 130 444 272 374 C292 210 366 96 508 48Z" />
+      <path className="irm-island" filter="url(#irm-shadow)" d="M518 62 C676 42 810 144 826 318 C962 366 980 520 902 638 C1006 786 948 942 812 1010 C858 1184 720 1376 522 1390 C316 1406 192 1302 226 1160 C94 1042 122 866 232 772 C116 642 158 464 292 388 C314 220 386 92 518 62Z" />
+
+      <path className="irm-river" d="M424 200 C410 312 532 346 468 452 C420 530 324 540 330 634 C338 760 530 748 510 884 C496 988 342 1038 374 1160 C400 1260 510 1266 492 1388" />
+      <path className="irm-lake" d="M282 560 C342 508 442 518 478 594 C442 670 322 682 276 616 C262 594 264 578 282 560Z" />
+      <path className="irm-lake" d="M632 718 C710 666 826 696 840 782 C776 842 660 844 618 782 C598 752 604 732 632 718Z" />
+      <path className="irm-trail" d="M250 930 C356 858 456 880 528 802 C608 716 608 596 710 540" />
+      <path className="irm-trail" d="M268 1200 C380 1128 478 1140 560 1062 C644 982 716 982 812 910" />
+
+      <IllustratedCastle x={530} y={126} scale={0.85} />
+      <IllustratedWaterfall x={404} y={332} scale={1.04} />
+      <IllustratedWaterfall x={706} y={730} scale={0.92} />
+      <IllustratedWaterfall x={402} y={895} scale={0.84} />
+      <IllustratedMountain x={690} y={650} scale={0.9} />
+      <IllustratedMountain x={294} y={980} scale={0.75} />
+      <IllustratedCastle x={650} y={1058} scale={0.72} />
+      <IllustratedCastle x={555} y={1296} scale={0.62} />
+
+      {trees.map(([x, y, scale], index) => <IllustratedTree x={x} y={y} scale={scale} key={index} />)}
+
+      <g className="irm-road">
+        <path className="outline" d="M638 1378 C602 1268 694 1184 638 1074 C586 972 664 890 620 784 C572 666 650 594 612 484 C580 392 650 326 626 238 C612 186 648 146 646 104" />
+        <path className="fill" d="M638 1378 C602 1268 694 1184 638 1074 C586 972 664 890 620 784 C572 666 650 594 612 484 C580 392 650 326 626 238 C612 186 648 146 646 104" />
+        {[1378, 1074, 784, 484, 238, 104].map((cy, index) => (
+          <circle className={index === 0 || index === 5 ? "endpoint" : "waypoint"} cx={index === 0 ? 638 : index === 1 ? 638 : index === 2 ? 620 : index === 3 ? 612 : index === 4 ? 626 : 646} cy={cy} r={index === 0 || index === 5 ? 17 : 9} key={cy} />
+        ))}
+      </g>
+
+      <g className="irm-pin" transform="translate(646 88)">
+        <path d="M0 -38 C26 -38 44 -18 44 6 C44 38 0 68 0 68 C0 68 -44 38 -44 6 C-44 -18 -26 -38 0 -38Z" />
+        <circle r="15" />
+      </g>
+
+      <g className="irm-city" transform="translate(676 1374)">
+        <rect x="-120" y="-54" width="250" height="78" rx="10" />
+        <rect x="-80" y="-120" width="30" height="72" rx="5" />
+        <rect x="-14" y="-150" width="40" height="100" rx="5" />
+        <rect x="54" y="-104" width="32" height="56" rx="5" />
+        <circle cx="118" cy="-62" r="52" />
+        <path d="M118 -114 V-10 M66 -62 H170 M82 -98 L154 -26 M154 -98 L82 -26" />
+      </g>
+
+      <g className="irm-bus" transform="translate(820 1386)">
+        <rect x="-46" y="-18" width="92" height="42" rx="8" />
+        <circle cx="-26" cy="28" r="8" /><circle cx="26" cy="28" r="8" />
+        <rect x="-34" y="-8" width="18" height="13" rx="2" /><rect x="-8" y="-8" width="18" height="13" rx="2" /><rect x="18" y="-8" width="18" height="13" rx="2" />
+      </g>
+
+      <IllustratedMapLabel className="static scotland" label="The Scottish Borders" width={250} />
+      <IllustratedMapLabel className="static loch" label="Loch Lomond" width={160} />
+      <IllustratedMapLabel className="static cairn" label="Cairngorms" width={160} />
+      <IllustratedMapLabel className="static lake" label="Lake District" width={170} />
+      <IllustratedMapLabel className="static york" label="York" width={90} />
+      <IllustratedMapLabel className="static oxford" label="Oxford" width={115} />
+      <IllustratedMapLabel className="dynamic end" label={end} width={Math.min(270, Math.max(140, end.length * 13))} />
+      <IllustratedMapLabel className="dynamic start" label={start} width={Math.min(270, Math.max(140, start.length * 13))} />
+    </svg>
+  );
+}
+
+function RouteMapPlannerPage({
+  origin,
+  setOrigin,
+  destination,
+  setDestination,
+  departureTime,
+  setDepartureTime,
+  travelMode,
+  setTravelMode,
+  radius,
+  setRadius,
+  preferences,
+  setPreferences,
+  loading,
+  submitted,
+  onSubmit,
+  results,
+  visibleLocations,
+  selectedPlace,
+  setSelectedPlace,
+  discoveryState,
+  scanStage,
+  notify,
+  setView,
+  sampleMode = false
+}) {
+  const hasRoute = Boolean(results?.route);
+  const routeDistance = results?.route?.distance || "664 km";
+  const routeDuration = results?.route?.duration || "7 hr 30 min";
+  const startLabel = results?.route?.segments?.[0]?.from || origin || "London";
+  const endLabel = results?.route?.segments?.at?.(-1)?.to || destination || "Edinburgh";
+  const plannedTrips = [
+    `${startLabel} to ${endLabel}`,
+    "London to Edinburgh",
+    "Bonn to Cologne"
+  ];
+  return (
+    <main className="route-map-page">
+      <aside className="route-map-sidebar" aria-label="Route planner">
+        <button className="route-map-logo" type="button" onClick={() => setView("home")} aria-label="OffTrail home">
+          <Gem size={25} />
+          <span>OffTrail</span>
+        </button>
+
+        <label className="route-map-search">
+          <span className="sr-only">Search planned trips</span>
+          <Search size={17} />
+          <input type="search" placeholder="Search trips" />
+        </label>
+
+        <form className="route-map-planner-card" onSubmit={onSubmit} noValidate>
+          <div className="route-map-planner-head">
+            <span>Route Planner</span>
+            <Gem size={19} />
+          </div>
+          <h1>Plan a route</h1>
+          <p>Enter two places and OffTrail will only show provider-verified stops.</p>
+          {sampleMode && (
+            <div className="sample-data-warning" role="status" aria-live="polite">
+              <strong>DEMO DATA - NOT REAL PROVIDER RESULT</strong>
+              <span>Sample cards stay separate from verified production results.</span>
+            </div>
+          )}
+          <div className="route-map-field-stack">
+            <PlaceInput label="Origin" value={origin} onChange={setOrigin} placeholder="London, UK" error={submitted && !origin.trim() ? "Origin is required." : ""} disabled={loading} />
+            <PlaceInput label="Destination" value={destination} onChange={setDestination} placeholder="Edinburgh, UK" error={submitted && !destination.trim() ? "Destination is required." : ""} disabled={loading} />
+            <label>
+              <span>Travel Date & Time</span>
+              <input type="datetime-local" value={departureTime} onChange={(event) => setDepartureTime(event.target.value)} disabled={loading} />
+            </label>
+            <label>
+              <span>Transport Mode</span>
+              <select value={travelMode} onChange={(event) => setTravelMode(event.target.value)} disabled={loading}>
+                <option>Train</option>
+                <option>Car</option>
+                <option>Walking</option>
+                <option>Cycling</option>
+              </select>
+            </label>
+          </div>
+          <div className="route-map-radius">
+            <div>
+              <span>Route corridor</span>
+              <strong>{radius}km</strong>
+            </div>
+            <input type="range" min="1" max="10" value={radius} onChange={(event) => setRadius(Number(event.target.value))} disabled={loading} />
+          </div>
+          <details className="route-map-advanced">
+            <summary>Advanced filters</summary>
+            <FilterChips options={preferenceOptions} selected={preferences} onToggle={(key) => toggleSet(preferences, setPreferences, key)} />
+          </details>
+          <button className="route-map-submit" type="submit" disabled={loading}>
+            {loading ? <Loader2 className="spin" size={18} /> : <Search size={18} />}
+            <span>{loading ? "Checking real routes..." : "Plan My Route"}</span>
+          </button>
+        </form>
+
+        <section className="route-map-trips" aria-label="Planned trips">
+          <h2>Planned Trips</h2>
+          {plannedTrips.map((trip, index) => (
+            <button className={index === 0 ? "is-active" : ""} type="button" key={`${trip}-${index}`} onClick={() => index === 0 && notify("Current planner route selected.")}>
+              <span>{trip}</span>
+              <small>{index === 0 ? "Current draft" : "Saved preview"}</small>
+            </button>
+          ))}
+        </section>
+
+        <div className="route-map-sidebar-actions">
+          <button type="button" onClick={() => setView("profile")}><User size={17} /> Profile</button>
+          <button type="button" onClick={() => notify("Settings are available from your account menu.")}><Settings size={17} /> Settings</button>
+          <button type="button" className="is-primary" onClick={() => setView("home")}><Plus size={17} /> New Trip</button>
+        </div>
+      </aside>
+
+      <section className="route-map-main" aria-label="Illustrated route map">
+        <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
+        <div className="route-map-topbar">
+          <button type="button" onClick={() => setView("home")} aria-label="Back to OffTrail home"><ArrowLeft size={18} /></button>
+          <strong>OffTrail</strong>
+          <button type="button" aria-label="Save route" onClick={() => notify("Save route after a verified route is loaded.")}><Heart size={18} /></button>
+        </div>
+        <div className="route-map-title-ribbon" aria-hidden="true">
+          <span>{startLabel}</span>
+          <strong>to</strong>
+          <span>{endLabel}</span>
+        </div>
+        <div className="route-map-bottom-cards">
+          <article>
+            <div><MapPin size={18} /><strong>{routeDistance}</strong></div>
+            <div><Clock size={18} /><strong>{routeDuration}</strong></div>
+          </article>
+          <article>
+            <span><i /> Scenic Route</span>
+            <span><i className="is-water" /> Waterfalls</span>
+          </article>
+        </div>
+        <div className="route-map-controls" aria-label="Map controls">
+          <button type="button" onClick={() => notify("Zoom controls are visual until map providers are enabled.")}>+</button>
+          <button type="button" onClick={() => notify("Zoom controls are visual until map providers are enabled.")}>-</button>
+          <button type="button" onClick={() => notify("Location focus is available from Explore Nearby.")}><Compass size={18} /></button>
+        </div>
+        {discoveryState?.type && !loading && (
+          <article className="route-map-state" role={discoveryState?.type ? "alert" : "status"} aria-live={discoveryState?.type ? "assertive" : "polite"}>
+            <Compass size={26} />
+            <strong>No verified route loaded</strong>
+            <p>{discoveryState?.message || "Use the planner to check provider-backed routes. OffTrail will not invent stops when source data is unavailable."}</p>
+            {discoveryState?.type && <button type="button" onClick={onSubmit}>Try again</button>}
+          </article>
+        )}
+        {loading && (
+          <article className="route-map-state is-loading" role="status" aria-live="polite">
+            <Loader2 className="spin" size={26} />
+            <strong>{scanStageHeadline(scanStage)}</strong>
+            <p>Checking real routes and verified stop data.</p>
+          </article>
+        )}
+        {visibleLocations.length > 0 && (
+          <section className="route-map-results" aria-label="Verified stops">
+            <div>
+              <h2>Verified stops</h2>
+              <span>{visibleLocations.length} found</span>
+            </div>
+            {visibleLocations.slice(0, 3).map((location, index) => (
+              <button type="button" key={location.id} onClick={() => setSelectedPlace(location)}>
+                <strong>{location.name}</strong>
+                <span>{location.detourLabel || location.distanceLabel || `${index + 1} stop`}</span>
+              </button>
+            ))}
+          </section>
+        )}
+      </section>
+      {selectedPlace && <PlaceDetailDrawer place={selectedPlace} onClose={() => setSelectedPlace(null)} />}
+    </main>
   );
 }
 
@@ -1713,9 +2058,7 @@ function StitchTopNav({ active = "explore" }) {
       </a>
       <nav>
         <a className={active === "explore" ? "is-active" : ""} href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>Explore</a>
-        <a className={active === "routes" ? "is-active" : ""} href={viewHref("routeDiscovery")} onClick={(event) => handleViewNavigation(event, navigateTo, "routeDiscovery")}>Routes</a>
         <a className={active === "nearby" ? "is-active" : ""} href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
-        <a className={active === "layover" ? "is-active" : ""} href={viewHref("layover")} onClick={(event) => handleViewNavigation(event, navigateTo, "layover")}>Layover</a>
         <a className={active === "saved" ? "is-active" : ""} href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved</a>
       </nav>
       <div>
@@ -2075,7 +2418,6 @@ function DiscoveryErrorPage() {
       <header className="stitch-error-nav">
         <a className="stitch-wordmark" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>OffTrail</a>
         <div>
-          <a href={viewHref("routeDiscovery")} onClick={(event) => handleViewNavigation(event, navigateTo, "routeDiscovery")}>Routes</a>
           <a href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
         </div>
       </header>
@@ -3639,9 +3981,7 @@ function SlideMenu() {
   const { menuOpen, setMenuOpen, navigateTo, auth, signOut } = useOffTrail();
   const menuItems = [
     ["home", "Explore"],
-    ["routeDiscovery", "Routes"],
     ["nearby", "Nearby"],
-    ["layover", "Layover"],
     ["favorites", "Saved"]
   ];
 

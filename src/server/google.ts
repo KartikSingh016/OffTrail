@@ -124,9 +124,9 @@ export async function calculateRoute(input: DiscoverRequest): Promise<RouteSumma
       return fallback;
     }
     throw new HttpError(
-      "Google Routes API is required to calculate a safe route. Add GOOGLE_MAPS_API_KEY or set OFFTRAIL_ALLOW_ESTIMATED_ROUTES=true for local sample previews only.",
+      "Verified route discovery is running in no-bill mode. To use Google Routes, set OFFTRAIL_ENABLE_PAID_PROVIDERS=true after adding strict Google Cloud quotas, then add GOOGLE_MAPS_API_KEY.",
       503,
-      "Missing GOOGLE_MAPS_API_KEY"
+      "Paid Google providers disabled or missing GOOGLE_MAPS_API_KEY"
     );
   }
 
@@ -217,9 +217,9 @@ function getGoogleTypesFromPreferences(preferences: string[]) {
 export async function fetchGooglePlaceDetail(placeId: string) {
   if (!serverEnv.googleMapsApiKey) {
     throw new HttpError(
-      "GOOGLE_MAPS_API_KEY is required for Google place details.",
+      "Google place details are disabled in no-bill mode. Enable paid providers only after setting usage quotas.",
       503,
-      "Missing GOOGLE_MAPS_API_KEY"
+      "Paid Google providers disabled or missing GOOGLE_MAPS_API_KEY"
     );
   }
 
