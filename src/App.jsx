@@ -1527,11 +1527,11 @@ function compactMapLabel(value, fallback = "Place") {
   return clean.length > 24 ? `${clean.slice(0, 22)}...` : clean;
 }
 
-function IllustratedMapLabel({ className, label, width = 170 }) {
+function IllustratedMapLabel({ className, label, width = 18, x = 0, y = 0 }) {
   return (
-    <g className={`irm-map-label ${className}`}>
-      <rect x={-width / 2} y="-24" width={width} height="42" rx="10" />
-      <text x="0" y="4" textAnchor="middle">{label}</text>
+    <g className={`irm-map-label ${className}`} transform={`translate(${x} ${y})`}>
+      <rect x={-width / 2} y="-2.4" width={width} height="4.2" rx="1" />
+      <text x="0" y="0.3" textAnchor="middle">{label}</text>
     </g>
   );
 }
@@ -1580,25 +1580,50 @@ function IllustratedWaterfall({ x, y, scale = 1 }) {
   );
 }
 
-function IllustratedRouteMap({ startLabel, endLabel }) {
-  const start = compactMapLabel(startLabel, "London");
-  const end = compactMapLabel(endLabel, "Edinburgh");
-  const trees = [
-    [315, 166, 0.7], [370, 150, 0.55], [450, 188, 0.6], [296, 314, 0.65], [380, 320, 0.75],
-    [660, 370, 0.65], [760, 410, 0.62], [290, 515, 0.75], [390, 566, 0.7], [700, 610, 0.7],
-    [790, 670, 0.55], [250, 840, 0.62], [360, 910, 0.72], [520, 990, 0.6], [780, 1030, 0.7],
-    [442, 1180, 0.6], [570, 1250, 0.7], [850, 1235, 0.56], [270, 1230, 0.72], [720, 1380, 0.62]
-  ];
+function IllustratedRouteMap({ startLabel, endLabel, route, places = [], sampleMode = false }) {
+  const start = compactMapLabel(startLabel, "Origin");
+  const end = compactMapLabel(endLabel, "Destination");
+  const routePath = Array.isArray(route?.path)
+    ? route.path.filter(([lat, lng]) => Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)))
+    : [];
+  const routePlaces = places
+    .map((place) => {
+      const lat = Number(place.lat ?? place.coordinates?.lat ?? place.location?.latitude);
+      const lng = Number(place.lng ?? place.coordinates?.lng ?? place.location?.longitude);
+      return { ...place, coordinates: { lat, lng } };
+    })
+    .filter((place) => Number.isFinite(place.coordinates.lat) && Number.isFinite(place.coordinates.lng));
+  const hasGeometry = routePath.length >= 2;
+  const bounds = hasGeometry ? makeBounds(routePath, routePlaces.map((place) => place.coordinates)) : null;
+  const routeD = hasGeometry ? routePathData(routePath, bounds) : "";
+  const endpoints = hasGeometry
+    ? {
+        start: toPercent({ lat: routePath[0][0], lng: routePath[0][1] }, bounds),
+        end: toPercent({ lat: routePath[routePath.length - 1][0], lng: routePath[routePath.length - 1][1] }, bounds)
+      }
+    : null;
+  const plottedPlaces = hasGeometry
+    ? routePlaces.slice(0, 6).map((place, index) => ({
+        ...place,
+        point: toPercent(place.coordinates, bounds),
+        index
+      }))
+    : [];
+  const trees = hasGeometry
+    ? routePath.filter((_, index) => index % Math.max(1, Math.floor(routePath.length / 10)) === 0).slice(0, 10).map(([lat, lng], index) => {
+        const point = toPercent({ lat, lng }, bounds);
+        return [clamp(point.x + (index % 2 ? -9 : 9), 8, 92), clamp(point.y + (index % 3 ? 8 : -8), 8, 92), 0.08 + (index % 3) * 0.015];
+      })
+    : [];
   const waves = [
-    [118, 112], [1010, 174], [92, 356], [1040, 520], [100, 724], [1010, 845], [154, 1125], [992, 1270],
-    [214, 72], [910, 74], [104, 494], [1050, 1006]
+    [10, 10], [82, 14], [8, 34], [88, 44], [9, 68], [84, 82], [18, 92], [78, 7]
   ];
 
   return (
-    <svg className="illustrated-route-map" viewBox="0 0 1100 1500" role="img" aria-label={`Illustrated route map from ${start} to ${end}`}>
+    <svg className={`illustrated-route-map ${hasGeometry ? "has-geometry" : "awaiting-geometry"}`} viewBox="0 0 100 100" role="img" aria-label={`Route-grounded illustrated map from ${start} to ${end}`}>
       <defs>
         <filter id="irm-shadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="10" stdDeviation="8" floodColor="#14343d" floodOpacity="0.24" />
+          <feDropShadow dx="0" dy="0.8" stdDeviation="0.9" floodColor="#14343d" floodOpacity="0.24" />
         </filter>
         <linearGradient id="irm-sea" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#aee4ec" />
@@ -1611,92 +1636,76 @@ function IllustratedRouteMap({ startLabel, endLabel }) {
         </linearGradient>
       </defs>
 
-      <rect width="1100" height="1500" fill="url(#irm-sea)" />
+      <rect width="100" height="100" fill="url(#irm-sea)" />
 
       {waves.map(([x, y], index) => (
-        <path className="irm-wave" d="M0 0 Q18 -10 36 0 T72 0" transform={`translate(${x} ${y})`} key={index} />
+        <path className="irm-wave" d="M0 0 Q2 -1 4 0 T8 0" transform={`translate(${x} ${y})`} key={index} />
       ))}
 
-      <g className="irm-compass" transform="translate(98 94)">
+      <g className="irm-compass" transform="translate(9 10) scale(0.12)">
         <circle r="42" />
         <path d="M0 -70 L12 -12 L70 0 L12 12 L0 70 L-12 12 L-70 0 L-12 -12 Z" />
         <text x="0" y="-84">N</text><text x="0" y="103">S</text><text x="-101" y="5">W</text><text x="91" y="5">E</text>
       </g>
 
-      <g className="irm-boat" transform="translate(1010 1170) scale(1.1)">
+      <g className="irm-boat" transform="translate(90 80) scale(0.1)">
         <path d="M-52 10 H54 L36 34 H-32 Z" />
         <rect x="-24" y="-20" width="42" height="28" rx="4" />
         <circle cx="-24" cy="18" r="4" /><circle cx="0" cy="18" r="4" /><circle cx="24" cy="18" r="4" />
       </g>
-      <g className="irm-sail" transform="translate(1006 735)">
+      <g className="irm-sail" transform="translate(90 52) scale(0.09)">
         <path d="M0 -62 L0 38" />
         <path d="M2 -55 L52 20 H2 Z" />
         <path d="M-4 -34 L-42 26 H-4 Z" />
         <path d="M-52 38 H60" />
       </g>
-      <g className="irm-whale" transform="translate(132 492)">
+      <g className="irm-whale" transform="translate(11 45) scale(0.1)">
         <path d="M-54 14 C-20 -24 43 -24 78 6 C46 46 -22 42 -54 14Z" />
         <path d="M70 8 L100 -16 L94 20 Z" />
         <circle cx="-24" cy="4" r="4" />
         <path d="M-75 -44 Q-58 -66 -41 -44 M-88 -26 Q-66 -42 -46 -26" />
       </g>
 
-      <path className="irm-island-back" d="M508 48 C688 42 828 140 848 308 C1000 362 1014 530 936 650 C1036 790 990 978 842 1036 C896 1210 736 1408 514 1422 C300 1436 176 1320 210 1164 C76 1046 98 854 210 772 C92 642 130 444 272 374 C292 210 366 96 508 48Z" />
-      <path className="irm-island" filter="url(#irm-shadow)" d="M518 62 C676 42 810 144 826 318 C962 366 980 520 902 638 C1006 786 948 942 812 1010 C858 1184 720 1376 522 1390 C316 1406 192 1302 226 1160 C94 1042 122 866 232 772 C116 642 158 464 292 388 C314 220 386 92 518 62Z" />
-
-      <path className="irm-river" d="M424 200 C410 312 532 346 468 452 C420 530 324 540 330 634 C338 760 530 748 510 884 C496 988 342 1038 374 1160 C400 1260 510 1266 492 1388" />
-      <path className="irm-lake" d="M282 560 C342 508 442 518 478 594 C442 670 322 682 276 616 C262 594 264 578 282 560Z" />
-      <path className="irm-lake" d="M632 718 C710 666 826 696 840 782 C776 842 660 844 618 782 C598 752 604 732 632 718Z" />
-      <path className="irm-trail" d="M250 930 C356 858 456 880 528 802 C608 716 608 596 710 540" />
-      <path className="irm-trail" d="M268 1200 C380 1128 478 1140 560 1062 C644 982 716 982 812 910" />
-
-      <IllustratedCastle x={530} y={126} scale={0.85} />
-      <IllustratedWaterfall x={404} y={332} scale={1.04} />
-      <IllustratedWaterfall x={706} y={730} scale={0.92} />
-      <IllustratedWaterfall x={402} y={895} scale={0.84} />
-      <IllustratedMountain x={690} y={650} scale={0.9} />
-      <IllustratedMountain x={294} y={980} scale={0.75} />
-      <IllustratedCastle x={650} y={1058} scale={0.72} />
-      <IllustratedCastle x={555} y={1296} scale={0.62} />
-
-      {trees.map(([x, y, scale], index) => <IllustratedTree x={x} y={y} scale={scale} key={index} />)}
-
-      <g className="irm-road">
-        <path className="outline" d="M638 1378 C602 1268 694 1184 638 1074 C586 972 664 890 620 784 C572 666 650 594 612 484 C580 392 650 326 626 238 C612 186 648 146 646 104" />
-        <path className="fill" d="M638 1378 C602 1268 694 1184 638 1074 C586 972 664 890 620 784 C572 666 650 594 612 484 C580 392 650 326 626 238 C612 186 648 146 646 104" />
-        {[1378, 1074, 784, 484, 238, 104].map((cy, index) => (
-          <circle className={index === 0 || index === 5 ? "endpoint" : "waypoint"} cx={index === 0 ? 638 : index === 1 ? 638 : index === 2 ? 620 : index === 3 ? 612 : index === 4 ? 626 : 646} cy={cy} r={index === 0 || index === 5 ? 17 : 9} key={cy} />
-        ))}
-      </g>
-
-      <g className="irm-pin" transform="translate(646 88)">
-        <path d="M0 -38 C26 -38 44 -18 44 6 C44 38 0 68 0 68 C0 68 -44 38 -44 6 C-44 -18 -26 -38 0 -38Z" />
-        <circle r="15" />
-      </g>
-
-      <g className="irm-city" transform="translate(676 1374)">
-        <rect x="-120" y="-54" width="250" height="78" rx="10" />
-        <rect x="-80" y="-120" width="30" height="72" rx="5" />
-        <rect x="-14" y="-150" width="40" height="100" rx="5" />
-        <rect x="54" y="-104" width="32" height="56" rx="5" />
-        <circle cx="118" cy="-62" r="52" />
-        <path d="M118 -114 V-10 M66 -62 H170 M82 -98 L154 -26 M154 -98 L82 -26" />
-      </g>
-
-      <g className="irm-bus" transform="translate(820 1386)">
-        <rect x="-46" y="-18" width="92" height="42" rx="8" />
-        <circle cx="-26" cy="28" r="8" /><circle cx="26" cy="28" r="8" />
-        <rect x="-34" y="-8" width="18" height="13" rx="2" /><rect x="-8" y="-8" width="18" height="13" rx="2" /><rect x="18" y="-8" width="18" height="13" rx="2" />
-      </g>
-
-      <IllustratedMapLabel className="static scotland" label="The Scottish Borders" width={250} />
-      <IllustratedMapLabel className="static loch" label="Loch Lomond" width={160} />
-      <IllustratedMapLabel className="static cairn" label="Cairngorms" width={160} />
-      <IllustratedMapLabel className="static lake" label="Lake District" width={170} />
-      <IllustratedMapLabel className="static york" label="York" width={90} />
-      <IllustratedMapLabel className="static oxford" label="Oxford" width={115} />
-      <IllustratedMapLabel className="dynamic end" label={end} width={Math.min(270, Math.max(140, end.length * 13))} />
-      <IllustratedMapLabel className="dynamic start" label={start} width={Math.min(270, Math.max(140, start.length * 13))} />
+      {hasGeometry ? (
+        <>
+          <path className="irm-route-corridor-back" d={routeD} />
+          <path className="irm-route-corridor" d={routeD} />
+          <path className="irm-river-grounded" d={routeD} />
+          {trees.map(([x, y, scale], index) => <IllustratedTree x={x} y={y} scale={scale} key={index} />)}
+          <g className="irm-road">
+            <path className="outline" d={routeD} />
+            <path className="fill" d={routeD} />
+            <circle className="endpoint" cx={endpoints.start.x} cy={endpoints.start.y} r="1.6" />
+            <circle className="endpoint" cx={endpoints.end.x} cy={endpoints.end.y} r="1.6" />
+            {routePath.slice(1, -1).filter((_, index) => index % Math.max(1, Math.floor(routePath.length / 4)) === 0).slice(0, 4).map(([lat, lng], index) => {
+              const point = toPercent({ lat, lng }, bounds);
+              return <circle className="waypoint" cx={point.x} cy={point.y} r="0.8" key={`${lat}-${lng}-${index}`} />;
+            })}
+          </g>
+          <g className="irm-pin" transform={`translate(${endpoints.end.x} ${endpoints.end.y - 4}) scale(0.08)`}>
+            <path d="M0 -38 C26 -38 44 -18 44 6 C44 38 0 68 0 68 C0 68 -44 38 -44 6 C-44 -18 -26 -38 0 -38Z" />
+            <circle r="15" />
+          </g>
+          {plottedPlaces.map((place) => (
+            <g className="irm-place-callout" transform={`translate(${place.point.x} ${place.point.y})`} key={place.id || place.name}>
+              <path d={`M0 0 Q${place.index % 2 ? -5 : 5} ${place.index % 3 ? -6 : 6} ${place.index % 2 ? -12 : 12} ${place.index % 3 ? -10 : 10}`} />
+              <g transform={`translate(${place.index % 2 ? -15 : 15} ${place.index % 3 ? -12 : 12})`}>
+                {place.type === "food" ? <IllustratedCastle x={0} y={0} scale={0.04} /> : place.type === "viewpoint" ? <IllustratedMountain x={0} y={0} scale={0.05} /> : <IllustratedWaterfall x={0} y={0} scale={0.045} />}
+                <IllustratedMapLabel className="place" label={compactMapLabel(place.name, "Verified stop")} width={Math.min(18, Math.max(10, compactMapLabel(place.name).length * 0.9))} />
+              </g>
+            </g>
+          ))}
+          <IllustratedMapLabel className="dynamic start" label={start} width={Math.min(24, Math.max(11, start.length * 0.9))} x={clamp(endpoints.start.x + 8, 12, 88)} y={clamp(endpoints.start.y + 4, 10, 92)} />
+          <IllustratedMapLabel className="dynamic end" label={end} width={Math.min(24, Math.max(11, end.length * 0.9))} x={clamp(endpoints.end.x - 8, 12, 88)} y={clamp(endpoints.end.y - 4, 8, 90)} />
+          {sampleMode && <text className="irm-demo-watermark" x="50" y="96" textAnchor="middle">Demo geometry - not a provider result</text>}
+        </>
+      ) : (
+        <g className="irm-awaiting">
+          <rect x="20" y="36" width="60" height="24" rx="3" />
+          <text x="50" y="45" textAnchor="middle">Awaiting verified route geometry</text>
+          <text x="50" y="52" textAnchor="middle">No cartoon map is drawn until a real route path exists.</text>
+        </g>
+      )}
     </svg>
   );
 }
@@ -1728,15 +1737,11 @@ function RouteMapPlannerPage({
   sampleMode = false
 }) {
   const hasRoute = Boolean(results?.route);
-  const routeDistance = results?.route?.distance || "664 km";
-  const routeDuration = results?.route?.duration || "7 hr 30 min";
-  const startLabel = results?.route?.segments?.[0]?.from || origin || "London";
-  const endLabel = results?.route?.segments?.at?.(-1)?.to || destination || "Edinburgh";
-  const plannedTrips = [
-    `${startLabel} to ${endLabel}`,
-    "London to Edinburgh",
-    "Bonn to Cologne"
-  ];
+  const routeDistance = results?.route?.distance || "Awaiting route";
+  const routeDuration = results?.route?.duration || "Provider check";
+  const startLabel = results?.route?.segments?.[0]?.from || origin || "Origin";
+  const endLabel = results?.route?.segments?.at?.(-1)?.to || destination || "Destination";
+  const plannedTrips = origin || destination ? [`${origin || "Origin"} to ${destination || "Destination"}`] : [];
   return (
     <main className="route-map-page">
       <aside className="route-map-sidebar" aria-label="Route planner">
@@ -1798,15 +1803,17 @@ function RouteMapPlannerPage({
           </button>
         </form>
 
+        {plannedTrips.length > 0 && (
         <section className="route-map-trips" aria-label="Planned trips">
-          <h2>Planned Trips</h2>
+          <h2>Current draft</h2>
           {plannedTrips.map((trip, index) => (
-            <button className={index === 0 ? "is-active" : ""} type="button" key={`${trip}-${index}`} onClick={() => index === 0 && notify("Current planner route selected.")}>
+            <button className="is-active" type="button" key={`${trip}-${index}`} onClick={() => notify("Current planner route selected.")}>
               <span>{trip}</span>
-              <small>{index === 0 ? "Current draft" : "Saved preview"}</small>
+              <small>{hasRoute ? "Provider route loaded" : "Not verified yet"}</small>
             </button>
           ))}
         </section>
+        )}
 
         <div className="route-map-sidebar-actions">
           <button type="button" onClick={() => setView("profile")}><User size={17} /> Profile</button>
@@ -1816,25 +1823,33 @@ function RouteMapPlannerPage({
       </aside>
 
       <section className="route-map-main" aria-label="Illustrated route map">
-        <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
+        <IllustratedRouteMap
+          startLabel={startLabel}
+          endLabel={endLabel}
+          route={results?.route}
+          places={visibleLocations}
+          sampleMode={sampleMode}
+        />
         <div className="route-map-topbar">
           <button type="button" onClick={() => setView("home")} aria-label="Back to OffTrail home"><ArrowLeft size={18} /></button>
           <strong>OffTrail</strong>
           <button type="button" aria-label="Save route" onClick={() => notify("Save route after a verified route is loaded.")}><Heart size={18} /></button>
         </div>
+        {hasRoute && (
         <div className="route-map-title-ribbon" aria-hidden="true">
           <span>{startLabel}</span>
           <strong>to</strong>
           <span>{endLabel}</span>
         </div>
+        )}
         <div className="route-map-bottom-cards">
           <article>
             <div><MapPin size={18} /><strong>{routeDistance}</strong></div>
             <div><Clock size={18} /><strong>{routeDuration}</strong></div>
           </article>
           <article>
-            <span><i /> Scenic Route</span>
-            <span><i className="is-water" /> Waterfalls</span>
+            <span><i /> {hasRoute ? "Route geometry" : "Provider route required"}</span>
+            <span><i className="is-water" /> {hasRoute ? "Verified stops only" : "No fake stops drawn"}</span>
           </article>
         </div>
         <div className="route-map-controls" aria-label="Map controls">
