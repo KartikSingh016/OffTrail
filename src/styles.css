@@ -13294,7 +13294,7 @@ img {
 .irm-wave {
   fill: none;
   stroke: rgba(255, 255, 255, 0.55);
-  stroke-width: 5;
+  stroke-width: 0.35;
   stroke-linecap: round;
 }
 
@@ -13436,24 +13436,56 @@ img {
 
 .irm-road .outline {
   stroke: #1c2e92;
-  stroke-width: 32;
-  filter: drop-shadow(0 8px 0 rgba(8, 30, 70, 0.24));
+  stroke-width: 3.2;
+  filter: drop-shadow(0 0.4px 0 rgba(8, 30, 70, 0.24));
 }
 
 .irm-road .fill {
   stroke: #4c69ff;
-  stroke-width: 20;
+  stroke-width: 1.8;
 }
 
 .irm-road .endpoint,
 .irm-road .waypoint {
   fill: #f8fbff;
   stroke: #1c2e92;
-  stroke-width: 7;
+  stroke-width: 0.42;
 }
 
 .irm-road .waypoint {
-  stroke-width: 5;
+  stroke-width: 0.32;
+}
+
+.irm-route-corridor-back,
+.irm-route-corridor,
+.irm-river-grounded {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.irm-route-corridor-back {
+  stroke: rgba(255, 255, 255, 0.48);
+  stroke-width: 18;
+  filter: drop-shadow(0 1.5px 1.5px rgba(17, 74, 58, 0.22));
+}
+
+.irm-route-corridor {
+  stroke: url(#irm-land);
+  stroke-width: 15;
+}
+
+.irm-river-grounded {
+  stroke: rgba(92, 203, 220, 0.55);
+  stroke-width: 3.5;
+  stroke-dasharray: 0.8 2.4;
+}
+
+.irm-place-callout > path {
+  fill: none;
+  stroke: rgba(20, 32, 57, 0.42);
+  stroke-width: 0.25;
+  stroke-dasharray: 0.7 0.8;
 }
 
 .irm-pin path {
@@ -13559,9 +13591,10 @@ img {
 .irm-map-label {
   font-family: "Plus Jakarta Sans", system-ui, sans-serif;
   font-weight: 900;
-  font-size: 22px;
+  font-size: 1.75px;
   letter-spacing: -0.02em;
-  filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.18));
+  filter: drop-shadow(0 0.45px 0 rgba(0, 0, 0, 0.18));
+  pointer-events: none;
 }
 
 .irm-map-label rect {
@@ -13573,36 +13606,34 @@ img {
   dominant-baseline: middle;
 }
 
-.irm-map-label.end {
-  transform: translate(660px, 164px);
+.irm-demo-watermark {
+  fill: rgba(20, 32, 57, 0.74);
+  font: 700 1.4px "Plus Jakarta Sans", system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.irm-map-label.start {
-  transform: translate(720px, 1376px);
+.irm-awaiting rect {
+  fill: rgba(20, 32, 57, 0.78);
+  stroke: rgba(255, 255, 255, 0.44);
+  stroke-width: 0.2;
+  filter: drop-shadow(0 2px 4px rgba(20, 32, 57, 0.2));
 }
 
-.irm-map-label.scotland {
-  transform: translate(720px, 430px);
+.irm-awaiting text {
+  fill: #f6f6f0;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
-.irm-map-label.loch {
-  transform: translate(380px, 590px);
+.irm-awaiting text:first-of-type {
+  font-size: 1.7px;
+  font-weight: 900;
 }
 
-.irm-map-label.cairn {
-  transform: translate(735px, 710px);
-}
-
-.irm-map-label.lake {
-  transform: translate(350px, 1012px);
-}
-
-.irm-map-label.york {
-  transform: translate(748px, 982px);
-}
-
-.irm-map-label.oxford {
-  transform: translate(724px, 1244px);
+.irm-awaiting text:last-of-type {
+  fill: rgba(246, 246, 240, 0.78);
+  font-size: 1.15px;
+  font-weight: 700;
 }
 
 .route-map-bg,
