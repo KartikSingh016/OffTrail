@@ -905,16 +905,14 @@ function HeroSection() {
           Practical journey discovery for routes, layovers, and nearby exploration - uncover hidden gems,
           viewpoints, gardens, local favorites, and photogenic places most travelers miss.
         </p>
+       
         <div className="hero-actions">
-          <button className="wilderness-primary" type="button" onClick={() => setView("routeDiscovery")}>
-            <Route size={18} />
-            Plan My Route
-          </button>
           <button className="wilderness-secondary" type="button" onClick={() => setView("nearby")}>
-            <Navigation size={18} />
-            Explore Around You
+         <Navigation size={18} />
+    Explore Around You
           </button>
         </div>
+       
         <div className="hero-category-row">
           <button type="button" onClick={() => setModal("hidden")}><Gem size={14} /> Hidden gems</button>
           <button type="button" onClick={() => setModal("photo")}><Camera size={14} /> Photo spots</button>
