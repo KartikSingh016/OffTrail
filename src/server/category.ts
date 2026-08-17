@@ -15,13 +15,13 @@ const GOOGLE_CATEGORY_MAP: Array<[string[], string]> = [
   [["garden"], "garden"],
   [["park", "natural_feature"], "nature"],
   [["nature_reserve", "wood", "water", "peak", "cliff", "beach"], "nature"],
-  [["tourist_attraction", "point_of_interest"], "photo-op"],
   [["museum", "art_gallery"], "culture"],
   [["gallery", "artwork", "historic", "monument", "castle", "wayside_cross"], "culture"],
   [["cafe", "bakery"], "cafe"],
   [["restaurant", "bar"], "food"],
   [["church", "hindu_temple", "mosque", "synagogue"], "culture"],
-  [["shopping_mall", "store"], "culture"]
+  [["shopping_mall", "store"], "culture"],
+  [["tourist_attraction", "point_of_interest"], "photo-op"]
 ];
 
 const NAME_CATEGORY_MAP: Array<[RegExp, string]> = [
@@ -35,14 +35,14 @@ const NAME_CATEGORY_MAP: Array<[RegExp, string]> = [
 export function normalizeCategory(types: string[], name = "") {
   const lowerTypes = types.map((type) => type.toLowerCase());
 
-  for (const [pattern, category] of NAME_CATEGORY_MAP) {
-    if (pattern.test(name)) return category;
-  }
-
   for (const [matches, category] of GOOGLE_CATEGORY_MAP) {
     if (matches.some((match) => lowerTypes.some((type) => type.includes(match)))) {
       return category;
     }
+  }
+
+  for (const [pattern, category] of NAME_CATEGORY_MAP) {
+    if (pattern.test(name)) return category;
   }
 
   return "culture";

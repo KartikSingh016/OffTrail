@@ -151,7 +151,7 @@ function mapFoursquarePlace(place: FoursquarePlace): PlaceCandidate[] {
 
 function normalizeFoursquareRating(rating?: number) {
   if (!rating) return 0;
-  return rating > 5 ? Number((rating / 2).toFixed(1)) : rating;
+  return Number((rating / 2).toFixed(1));
 }
 
 function mapFoursquarePhotos(photos?: Array<{ prefix?: string; suffix?: string }>) {

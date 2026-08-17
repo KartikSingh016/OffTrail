@@ -15,6 +15,7 @@ import type { DiscoverRequest, DiscoverResponse, LatLng, LocationResult, PlaceCa
 
 const googleLimiter = createRateLimiter(10, 1000);
 const foursquareLimiter = createRateLimiter(10, 1000);
+const osmLimiter = createRateLimiter(5, 1000); // ponytail: public Overpass fair-use pacing, self-host Overpass if throughput matters
 
 export async function discover(input: DiscoverRequest): Promise<DiscoverResponse> {
   const radiusKm = input.radius || 5;
@@ -26,14 +27,16 @@ export async function discover(input: DiscoverRequest): Promise<DiscoverResponse
 
   const searchResults = await Promise.allSettled(
     searchPoints.map(async (point) => {
-      const [google, foursquare] = await Promise.allSettled([
+      const [google, foursquare, osm] = await Promise.allSettled([
         googleLimiter(() => searchGooglePlaces(point, radiusKm, filters)),
-        foursquareLimiter(() => searchFoursquarePlaces(point, radiusKm))
+        foursquareLimiter(() => searchFoursquarePlaces(point, radiusKm)),
+        osmLimiter(() => searchOsmPlaces(point, radiusKm, filters))
       ]);
 
       return [
         ...(google.status === "fulfilled" ? google.value : []),
-        ...(foursquare.status === "fulfilled" ? foursquare.value : [])
+        ...(foursquare.status === "fulfilled" ? foursquare.value : []),
+        ...(osm.status === "fulfilled" ? osm.value : [])
       ];
     })
   );
@@ -41,8 +44,7 @@ export async function discover(input: DiscoverRequest): Promise<DiscoverResponse
   const discovered = searchResults.flatMap((result) =>
     result.status === "fulfilled" ? result.value : []
   );
-  const osmCandidates = discovered.length ? [] : await searchRealOsmCorridor(routePoints, radiusKm, filters, input);
-  const candidates = discovered.length ? discovered : osmCandidates;
+  const candidates = discovered.length ? discovered : await searchRealOsmCorridor(routePoints, radiusKm, filters, input);
 
   const deduped = dedupeLocations(candidates);
   const scored = deduped.map((location) => scoreLocation(location, routePoints));

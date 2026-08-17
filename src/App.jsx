@@ -1717,6 +1717,7 @@ function RouteMapPlannerPage({
   onSubmit,
   results,
   visibleLocations,
+  selected = new Set(),
   selectedPlace,
   setSelectedPlace,
   discoveryState,
@@ -1813,8 +1814,20 @@ function RouteMapPlannerPage({
         </div>
       </aside>
 
-      <section className="route-map-main" aria-label="Illustrated route map">
-        <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
+      <section className="route-map-main" aria-label="Route map">
+        {hasRoute ? (
+          <AnimatedRouteMap
+            route={results.route}
+            locations={visibleLocations}
+            selected={selected}
+            onSelectPlace={setSelectedPlace}
+            variant="journey"
+            scanStage={scanStage}
+            loading={loading}
+          />
+        ) : (
+          <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
+        )}
         <div className="route-map-topbar">
           <button type="button" onClick={() => setView("home")} aria-label="Back to OffTrail home"><ArrowLeft size={18} /></button>
           <strong>OffTrail</strong>
@@ -3156,7 +3169,7 @@ function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelec
         </defs>
         {hasVerifiedRoute && <path className="route-shadow-line" d={routePath} />}
         {hasVerifiedRoute && <path className="route-active-line" d={routePath} stroke={`url(#routeGradient-${variant})`} pathLength="1" />}
-        {hasVerifiedRoute && pins.slice(0, 10).map((pin) => (
+        {hasVerifiedRoute && pins.map((pin) => (
           <path
             key={`line-${pin.id}`}
             className="route-branch-line"

@@ -9,6 +9,7 @@ import {
   routeCacheKey,
   routeDistanceMeters
 } from "./geo";
+import { calculateOsrmRoute } from "./osm";
 import { fetchJson, HttpError } from "./retry";
 import type { DiscoverRequest, LatLng, PlaceCandidate, RouteSummary } from "./types";
 
@@ -116,18 +117,21 @@ export async function calculateRoute(input: DiscoverRequest): Promise<RouteSumma
 
   const origin = { lat: input.originLat, lng: input.originLng };
   const destination = { lat: input.destinationLat, lng: input.destinationLng };
+  const layovers = (input.layovers || []).map((layover) => ({ lat: layover.lat, lng: layover.lng }));
 
-  if (!serverEnv.googleMapsApiKey) {
-    if (serverEnv.allowEstimatedRoutes) {
-      const fallback = createFallbackRoute(origin, destination, input.layovers || []);
-      routeCache.set(key, fallback);
-      return fallback;
+  try {
+    const osrmRoute = await calculateOsrmRoute(origin, destination, layovers);
+    routeCache.set(key, osrmRoute);
+    return osrmRoute;
+  } catch (osrmError) {
+    if (!serverEnv.googleMapsApiKey) {
+      if (serverEnv.allowEstimatedRoutes) {
+        const fallback = createFallbackRoute(origin, destination, layovers);
+        routeCache.set(key, fallback);
+        return fallback;
+      }
+      throw osrmError;
     }
-    throw new HttpError(
-      "Verified route discovery is running in no-bill mode. To use Google Routes, set OFFTRAIL_ENABLE_PAID_PROVIDERS=true after adding strict Google Cloud quotas, then add GOOGLE_MAPS_API_KEY.",
-      503,
-      "Paid Google providers disabled or missing GOOGLE_MAPS_API_KEY"
-    );
   }
 
   const response = await fetchJson<GoogleRouteResponse>(

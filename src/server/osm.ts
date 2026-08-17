@@ -1,6 +1,7 @@
 import { defaultVisitTime, fallbackDescription, hiddenGemScore, isHiddenGem, normalizeCategory } from "./category";
-import { formatDistance, haversineMeters } from "./geo";
-import type { LatLng, PlaceCandidate } from "./types";
+import { decodeGooglePolyline, formatDistance, formatDuration, haversineMeters, routeDistanceMeters } from "./geo";
+import { fetchJson, HttpError } from "./retry";
+import type { LatLng, PlaceCandidate, RouteSummary } from "./types";
 
 type OverpassElement = {
   type: "node" | "way" | "relation";
@@ -34,12 +35,55 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter"
 ];
 
-const OSM_RESULT_LIMIT = 12;
+const OSM_RESULT_LIMIT = 20;
 const OVERPASS_TIMEOUT_MS = 7000;
 const OSM_USER_AGENT = "OffTrail/1.0 (contact@offtrail.app)";
 
+const OSRM_ROUTE_URL = "https://router.project-osrm.org/route/v1/driving";
+const OSRM_TIMEOUT_MS = 10000;
+
+type OsrmRouteResponse = {
+  code?: string;
+  routes?: Array<{
+    distance?: number;
+    duration?: number;
+    geometry?: string;
+  }>;
+};
+
+export async function calculateOsrmRoute(origin: LatLng, destination: LatLng, layovers: LatLng[] = []): Promise<RouteSummary> {
+  const coordinates = [origin, ...layovers, destination].map((point) => `${point.lng},${point.lat}`).join(";");
+  const url = `${OSRM_ROUTE_URL}/${coordinates}?overview=full&geometries=polyline&steps=false`;
+
+  const data = await fetchJson<OsrmRouteResponse>(
+    url,
+    {
+      headers: { "User-Agent": OSM_USER_AGENT },
+      signal: AbortSignal.timeout(OSRM_TIMEOUT_MS)
+    },
+    "OSRM Routing"
+  );
+
+  const route = data.routes?.[0];
+  if (data.code !== "Ok" || !route?.geometry) {
+    throw new HttpError("No route found between the selected locations.", 422, "OSRM returned no route");
+  }
+
+  const path = decodeGooglePolyline(route.geometry);
+  const distanceMeters = route.distance || routeDistanceMeters(path);
+  const durationSeconds = route.duration ? Math.round(route.duration) : Math.round((distanceMeters / 80000) * 3600);
+
+  return {
+    path: path.map((point) => [point.lat, point.lng] as [number, number]),
+    distance: formatDistance(distanceMeters),
+    duration: formatDuration(durationSeconds),
+    distanceMeters,
+    durationSeconds
+  };
+}
+
 export async function searchOsmPlaces(center: LatLng, radiusKm: number, filters: string[] = []): Promise<PlaceCandidate[]> {
-  const radiusMeters = Math.min(Math.max(Math.round(radiusKm * 1000), 500), 7000);
+  const radiusMeters = Math.min(Math.max(Math.round(radiusKm * 1000), 500), 12000);
   const query = buildOverpassQuery(center, radiusMeters, filters);
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
