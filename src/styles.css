@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:opsz,ital,wght@6..72,0,200..800;6..72,1,200..800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&family=Instrument+Serif:ital@0;1&family=Newsreader:opsz,ital,wght@6..72,0,200..800;6..72,1,200..800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Figtree:wght@400;500;600;700&family=Caprasimo&display=swap");
 
 :root {
   --background: 0 0% 0%;
@@ -12616,6 +12616,37 @@ img {
 .stitch-v2-map-status span {
   display: block;
   font-size: 0.72rem;
+}
+
+.route-cinematic {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #14120e;
+}
+
+.route-cinematic-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center center;
+}
+
+.route-cinematic-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f9f4ed;
+  background: rgba(20, 18, 14, 0.6);
+  border: 1px solid rgba(249, 244, 237, 0.28);
+  backdrop-filter: blur(10px);
 }
 
 .stitch-v2-waypoint-list {

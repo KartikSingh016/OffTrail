@@ -37,6 +37,7 @@ import {
   XCircle
 } from "lucide-react";
 import ExploreAroundYou from "../components/ExploreAroundYou.jsx";
+import RouteCinematic from "../components/RouteCinematic.jsx";
 
 const videoUrl =
   "https://cdn.pixabay.com/video/2024/03/25/205589-927335742_large.mp4";
@@ -653,20 +654,7 @@ function LandingPage() {
             </div>
             <div className="stitch-v2-visual-grid">
               <div className="stitch-v2-map-visual">
-                <video className="stitch-v2-map-video" src={videoUrl} autoPlay loop muted playsInline poster={wildernessHeroUrl} aria-hidden="true" />
-                <div className="stitch-v2-dot-grid" aria-hidden="true" />
-                <svg viewBox="0 0 800 600" aria-hidden="true">
-                  <path className="stitch-v2-route-path" d="M100 500 Q 200 450 300 480 T 500 400 T 700 100" fill="none" />
-                  <circle className="stitch-v2-pulse" cx="300" cy="480" r="6" />
-                  <circle className="stitch-v2-pulse is-ochre" cx="500" cy="400" r="6" />
-                </svg>
-                <div className="stitch-v2-map-status">
-                  <CheckCircle size={18} />
-                  <div>
-                    <strong>Checking real routes...</strong>
-                    <span>Provider-backed stops only</span>
-                  </div>
-                </div>
+                <RouteCinematic />
               </div>
               <div className="stitch-v2-waypoint-list">
                 {waypointCards.map(([name, copy, badge, tone]) => (
