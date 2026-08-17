@@ -83,10 +83,15 @@ export function fallbackDescription(name: string, category: string) {
 }
 
 export function hiddenGemScore(rating: number, ratingCount: number, category: string) {
-  if (!rating) return 0;
+  // OSM never supplies a rating, so treat "no rating data" as a neutral score
+  // from category alone rather than 0 - otherwise OSM results always lose ties.
+  if (!rating) return categoryWeight(category);
   return (rating / (Math.log10(ratingCount + 1) + 1)) * categoryWeight(category);
 }
 
 export function isHiddenGem(rating: number, ratingCount: number) {
-  return ratingCount > 0 && ratingCount < 100 && rating > 4.0;
+  // No rating data (e.g. every OSM-sourced place) can't be ruled out as a hidden
+  // gem - it's already filtered to interesting place types by the OSM query.
+  if (!ratingCount) return true;
+  return ratingCount < 100 && rating > 4.0;
 }
