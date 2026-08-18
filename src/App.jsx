@@ -573,8 +573,7 @@ function LandingPage() {
             <div className="stitch-v2-hero-copy">
               <span className="stitch-v2-kicker">__Intelligent Exploration</span>
               <h1>
-                Discover verified <br />
-                <em>hidden gems</em> along your route.
+                Discover <span className="stitch-v2-accent">hidden gems</span> along your route.
               </h1>
               <p>
                 Plan a route and find real, map-verified stops for food, views, nature, and culture.

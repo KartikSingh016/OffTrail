@@ -5689,10 +5689,9 @@ img {
 }
 
 .stitch-v2-hero {
-  min-height: 921px;
   display: flex;
   align-items: center;
-  padding-block: 32px;
+  padding-block: 72px;
 }
 
 .stitch-v2-hero-grid {
@@ -5705,7 +5704,7 @@ img {
 .stitch-v2-hero-copy {
   grid-column: span 6;
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
 .stitch-v2-kicker {
@@ -5717,20 +5716,22 @@ img {
 }
 
 .stitch-v2-hero-copy h1 {
-  max-width: 580px;
+  max-width: 480px;
   margin: 0;
   color: var(--s2-text);
-  font-size: clamp(2.8rem, 5vw, 4.85rem);
-  line-height: 1.04;
-  font-weight: 650;
+  font-family: var(--font-body);
+  font-size: clamp(2rem, 2.9vw, 2.9rem);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-.stitch-v2-hero-copy h1 em {
-  font-weight: 300;
+.stitch-v2-accent {
+  color: var(--s2-green);
 }
 
 .stitch-v2-hero-copy p {
-  max-width: 570px;
+  max-width: 460px;
   margin: 0;
   color: var(--s2-muted);
   font-size: 1rem;
@@ -5742,14 +5743,15 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  padding-top: 16px;
+  padding-top: 4px;
 }
 
 .stitch-v2-quick-filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  padding-top: 14px;
+  padding-top: 4px;
 }
 
 .stitch-v2-quick-filters button {
