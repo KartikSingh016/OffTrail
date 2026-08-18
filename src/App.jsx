@@ -506,9 +506,9 @@ function LandingPage() {
       departureTime: state.departureTime || toDatetimeLocal(new Date(Date.now() + 60 * 60 * 1000)),
       results: null,
       selectedLocationIds: [],
-      discoveryError: null
+      discoveryError: null,
+      autoSearch: true
     }));
-    notify("Route planner loaded. Run discovery to fetch verified stops.", "info");
     navigateTo("routeDiscovery");
   }
 
@@ -978,6 +978,17 @@ function JourneyRouteDiscoveryPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (routeState.autoSearch) {
+      setRouteState((state) => ({ ...state, autoSearch: false }));
+      discoverRoute();
+    }
+    // Run once on mount only - this fires the search that "Plan My Route"
+    // on the homepage already promised, instead of leaving the user on the
+    // pre-search placeholder until they notice they must submit again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleLocation(id) {
     setRouteState((state) => {
