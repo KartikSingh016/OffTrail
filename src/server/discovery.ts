@@ -1,7 +1,7 @@
 import { hiddenGemScore, isHiddenGem } from "./category";
 import { searchFoursquarePlaces } from "./foursquare";
 import { calculateRoute, searchGooglePlaces } from "./google";
-import { searchNominatimPlaces, searchOsmPlaces } from "./osm";
+import { searchNominatimPlaces, searchOsmCorridor } from "./osm";
 import {
   distanceToRouteMeters,
   formatDistance,
@@ -25,34 +25,35 @@ export async function discover(input: DiscoverRequest): Promise<DiscoverResponse
   const routePoints = route.path.map(([lat, lng]) => ({ lat, lng }));
   const searchPoints = interpolateRoute(routePoints, 5000, 40);
 
-  const searchResults = await Promise.allSettled(
-    searchPoints.map(async (point) => {
-      const [google, foursquare, osm] = await Promise.allSettled([
-        googleLimiter(() => searchGooglePlaces(point, radiusKm, filters)),
-        foursquareLimiter(() => searchFoursquarePlaces(point, radiusKm)),
-        osmLimiter(() => searchOsmPlaces(point, radiusKm, filters))
-      ]);
+  // Google/Foursquare have no cheap multi-point query, so they still search
+  // per sampled point. OSM/Overpass does support a multi-point `around` filter,
+  // so it runs as a single corridor-wide request instead of one per point -
+  // one request per point used to re-scan heavily overlapping search areas
+  // 40 times over, which reliably timed out the public Overpass instance and
+  // silently fell back to a much weaker origin/destination-only search.
+  const [perPointResults, osmResults] = await Promise.all([
+    Promise.allSettled(
+      searchPoints.map(async (point) => {
+        const [google, foursquare] = await Promise.allSettled([
+          googleLimiter(() => searchGooglePlaces(point, radiusKm, filters)),
+          foursquareLimiter(() => searchFoursquarePlaces(point, radiusKm))
+        ]);
+        return [
+          ...(google.status === "fulfilled" ? google.value : []),
+          ...(foursquare.status === "fulfilled" ? foursquare.value : [])
+        ];
+      })
+    ).then((results) => results.flatMap((result) => (result.status === "fulfilled" ? result.value : []))),
+    osmLimiter(() => searchOsmCorridor(searchPoints, radiusKm, filters)).catch(() => [])
+  ]);
 
-      return [
-        ...(google.status === "fulfilled" ? google.value : []),
-        ...(foursquare.status === "fulfilled" ? foursquare.value : []),
-        ...(osm.status === "fulfilled" ? osm.value : [])
-      ];
-    })
-  );
-
-  const discovered = searchResults.flatMap((result) =>
-    result.status === "fulfilled" ? result.value : []
-  );
-  const candidates = discovered.length ? discovered : await searchRealOsmCorridor(routePoints, radiusKm, filters, input);
+  const discovered = [...perPointResults, ...osmResults];
+  const candidates = discovered.length ? discovered : await searchRealOsmCorridor(filters, input);
 
   const deduped = dedupeLocations(candidates);
   const scored = deduped.map((location) => scoreLocation(location, routePoints));
   const filtered = applyFilters(scored, filters);
-  const sorted = filtered.sort((a, b) => {
-    if (a.detourMeters !== b.detourMeters) return a.detourMeters - b.detourMeters;
-    return b.hiddenGemScore - a.hiddenGemScore;
-  });
+  const sorted = distributeAcrossRoute(filtered, searchPoints);
 
   const limited = sorted.slice(0, 100);
   const enhanced = await enhanceLocations(limited);
@@ -76,6 +77,44 @@ function scoreLocation(location: PlaceCandidate, routePoints: LatLng[]): PlaceCa
     hiddenGemScore: score,
     isHiddenGem: isHiddenGem(location.rating, location.ratingCount)
   };
+}
+
+// A plain sort by detour distance lets dense areas (e.g. the origin city) fill
+// every slot before sparser stretches of the route get a look-in. Bucket
+// candidates by nearest search point instead, then round-robin across buckets
+// so results stay spread across the whole corridor, not just the start.
+function distributeAcrossRoute(locations: PlaceCandidate[], searchPoints: LatLng[]) {
+  if (!searchPoints.length) return locations;
+
+  const buckets: PlaceCandidate[][] = searchPoints.map(() => []);
+  for (const location of locations) {
+    let bestIndex = 0;
+    let bestDistance = Infinity;
+    for (let i = 0; i < searchPoints.length; i += 1) {
+      const distance = haversineMeters(location, searchPoints[i]);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    }
+    buckets[bestIndex].push(location);
+  }
+
+  for (const bucket of buckets) {
+    bucket.sort((a, b) => {
+      if (a.detourMeters !== b.detourMeters) return a.detourMeters - b.detourMeters;
+      return b.hiddenGemScore - a.hiddenGemScore;
+    });
+  }
+
+  const maxBucketLength = Math.max(0, ...buckets.map((bucket) => bucket.length));
+  const result: PlaceCandidate[] = [];
+  for (let round = 0; round < maxBucketLength; round += 1) {
+    for (const bucket of buckets) {
+      if (bucket[round]) result.push(bucket[round]);
+    }
+  }
+  return result;
 }
 
 function applyFilters(locations: PlaceCandidate[], filters: string[]) {
@@ -209,14 +248,11 @@ function normalizeFilters(filters: string[]) {
     .filter((filter) => KNOWN_FILTERS.has(filter));
 }
 
-async function searchRealOsmCorridor(routePoints: LatLng[], radiusKm: number, filters: string[], input: DiscoverRequest) {
-  const searchPoints = interpolateRoute(routePoints, 35000, 5);
-  const results = await Promise.allSettled(
-    searchPoints.map((point) => osmLimiter(() => searchOsmPlaces(point, radiusKm, filters)))
-  );
-  const overpass = results.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
-  if (overpass.length) return overpass;
-
+// Last resort once the corridor-wide Overpass search itself came back empty
+// (provider outage/overload, or genuinely nothing matched along the route).
+// A second Overpass attempt would likely fail for the same reason and just
+// doubles the wait, so this goes straight to a fast named-place lookup.
+async function searchRealOsmCorridor(filters: string[], input: DiscoverRequest) {
   const named = await Promise.allSettled([
     searchNominatimPlaces(input.origin, filters, { lat: input.originLat, lng: input.originLng }),
     searchNominatimPlaces(input.destination, filters, { lat: input.destinationLat, lng: input.destinationLng })

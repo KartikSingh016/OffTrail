@@ -36,7 +36,11 @@ const OVERPASS_ENDPOINTS = [
 ];
 
 const OSM_RESULT_LIMIT = 20;
-const OVERPASS_TIMEOUT_MS = 7000;
+// ponytail: a single-center query with a 7s budget was fine, but a corridor
+// query spanning dozens of route points needs real headroom or it never
+// finishes on the public Overpass instance - raise ceiling if that changes.
+const OVERPASS_TIMEOUT_MS = 18000;
+const OVERPASS_QUERY_TIMEOUT_S = 15;
 const OSM_USER_AGENT = "OffTrail/1.0 (contact@offtrail.app)";
 
 const OSRM_ROUTE_URL = "https://router.project-osrm.org/route/v1/driving";
@@ -82,9 +86,19 @@ export async function calculateOsrmRoute(origin: LatLng, destination: LatLng, la
   };
 }
 
-export async function searchOsmPlaces(center: LatLng, radiusKm: number, filters: string[] = []): Promise<PlaceCandidate[]> {
+// A single Overpass query that checks all `centers` at once (via a multi-point
+// `around` filter) instead of one HTTP round trip per point. Route-corridor
+// search used to fire one query per sampled point, each re-scanning heavily
+// overlapping search areas - that multiplied both request count and server-side
+// cost enough to reliably time out the public Overpass instance, which silently
+// dropped the whole corridor search down to a much weaker origin/destination-only
+// fallback. One combined query is both cheaper for the server and the
+// architecturally standard way to do this kind of search.
+export async function searchOsmCorridor(centers: LatLng[], radiusKm: number, filters: string[] = []): Promise<PlaceCandidate[]> {
+  if (!centers.length) return [];
   const radiusMeters = Math.min(Math.max(Math.round(radiusKm * 1000), 500), 12000);
-  const query = buildOverpassQuery(center, radiusMeters, filters);
+  const query = buildOverpassQuery(centers, radiusMeters, filters);
+  const anchor = centers[0];
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
     try {
@@ -101,13 +115,17 @@ export async function searchOsmPlaces(center: LatLng, radiusKm: number, filters:
         },
         "Overpass API"
       );
-      return (data.elements || []).flatMap((element) => mapOsmElement(element, center));
+      return (data.elements || []).flatMap((element) => mapOsmElement(element, anchor));
     } catch {
       continue;
     }
   }
 
   return [];
+}
+
+export async function searchOsmPlaces(center: LatLng, radiusKm: number, filters: string[] = []): Promise<PlaceCandidate[]> {
+  return searchOsmCorridor([center], radiusKm, filters);
 }
 
 export async function searchNominatimPlaces(
@@ -198,16 +216,22 @@ export async function searchNominatimAround(
   return dedupeById(results);
 }
 
-function buildOverpassQuery(center: LatLng, radiusMeters: number, filters: string[]) {
+function buildOverpassQuery(centers: LatLng[], radiusMeters: number, filters: string[]) {
   const clauses = osmClausesFromFilters(filters);
-  const around = `(around:${radiusMeters},${center.lat},${center.lng})`;
-  const selectors = clauses.flatMap((clause) => [
-    `node${around}${clause};`,
-    `way${around}${clause};`,
-    `relation${around}${clause};`
-  ]);
+  const around = `(around:${radiusMeters},${centers.map((point) => `${point.lat},${point.lng}`).join(",")})`;
+  // way/relation "around" checks require Overpass to evaluate full geometries
+  // instead of a single point, which is far more expensive - only worth it for
+  // clauses that are genuinely area features (parks, water, woods). Point
+  // amenities (cafes, viewpoints, museums...) are essentially always nodes.
+  const selectors = clauses.flatMap((clause) => {
+    const isAreaFeature = clause.includes('"leisure"') || clause.includes('"natural"');
+    return isAreaFeature
+      ? [`node${around}${clause};`, `way${around}${clause};`, `relation${around}${clause};`]
+      : [`node${around}${clause};`];
+  });
+  const resultLimit = Math.min(OSM_RESULT_LIMIT * centers.length, 300);
 
-  return `[out:json][timeout:7];(${selectors.join("")});out center tags ${OSM_RESULT_LIMIT};`;
+  return `[out:json][timeout:${OVERPASS_QUERY_TIMEOUT_S}];(${selectors.join("")});out center tags ${resultLimit};`;
 }
 
 function osmClausesFromFilters(filters: string[]) {

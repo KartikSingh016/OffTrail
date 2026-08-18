@@ -580,7 +580,6 @@ function LandingPage() {
                 Powered by live provider data.
               </p>
               <div className="stitch-v2-cta-row">
-                <button className="stitch-v2-primary" type="button" onClick={() => planRoute()}>Plan My Route</button>
                 <button className="stitch-v2-secondary" type="button" onClick={exploreNearMe}>Explore Near Me</button>
               </div>
               <div className="stitch-v2-quick-filters" aria-label="Quick filter shortcuts">
@@ -642,6 +641,7 @@ function LandingPage() {
                   </div>
                 </div>
               </div>
+              <button className="stitch-v2-primary stitch-v2-planner-submit" type="submit">Plan My Route</button>
             </form>
           </div>
         </section>
@@ -1320,7 +1320,17 @@ function RouteMapPlannerPage({
       </aside>
 
       <section className="route-map-main" aria-label="Route map">
-        <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
+        {loading ? (
+          <AnimatedRouteMap
+            route={results?.route}
+            locations={results?.locations || []}
+            variant="journey"
+            scanStage={scanStage}
+            loading={loading}
+          />
+        ) : (
+          <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
+        )}
         <div className="route-map-topbar">
           <button type="button" onClick={() => setView("home")} aria-label="Back to OffTrail home"><ArrowLeft size={18} /></button>
           <strong>OffTrail</strong>
