@@ -92,7 +92,7 @@ function applyFilters(locations: PlaceCandidate[], filters: string[]) {
       if (filter === "nature") {
         return categories.has("nature") || categories.has("park") || categories.has("garden");
       }
-      if (filter === "cafe") return categories.has("cafe") || categories.has("coffee shop");
+      if (filter === "cafe") return categories.has("cafe");
       return categories.has(filter);
     });
   });
@@ -165,6 +165,21 @@ function normalizeName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
 }
 
+const KNOWN_FILTERS = new Set([
+  "nature",
+  "viewpoint",
+  "hidden",
+  "photo-op",
+  "cafe",
+  "food",
+  "culture",
+  "garden",
+  "local",
+  "budget",
+  "night",
+  "rain"
+]);
+
 function normalizeFilters(filters: string[]) {
   const aliases: Record<string, string> = {
     photo: "photo-op",
@@ -187,13 +202,17 @@ function normalizeFilters(filters: string[]) {
   return filters
     .map((filter) => filter.trim().toLowerCase())
     .filter(Boolean)
-    .map((filter) => aliases[filter] || filter);
+    .map((filter) => aliases[filter] || filter)
+    // Drop unrecognized filters (typos, renamed keys) instead of letting them
+    // through to applyFilters, where an unmatchable filter silently zeroes
+    // the whole result set rather than just being ignored.
+    .filter((filter) => KNOWN_FILTERS.has(filter));
 }
 
 async function searchRealOsmCorridor(routePoints: LatLng[], radiusKm: number, filters: string[], input: DiscoverRequest) {
   const searchPoints = interpolateRoute(routePoints, 35000, 5);
   const results = await Promise.allSettled(
-    searchPoints.map((point) => searchOsmPlaces(point, radiusKm, filters))
+    searchPoints.map((point) => osmLimiter(() => searchOsmPlaces(point, radiusKm, filters)))
   );
   const overpass = results.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
   if (overpass.length) return overpass;
@@ -346,7 +365,7 @@ function enrichLocationForTime(location: PlaceCandidate, context: ReturnType<typ
   const layoverMinutes = Math.max(0, Math.round((context.departure.getTime() - context.arrival.getTime()) / 60000));
   const safeForNighttime =
     distanceFromStation <= context.maxDistanceMeters &&
-    ["cafe", "food", "restaurant", "bakery", "train_station"].includes(location.category);
+    ["cafe", "food"].includes(location.category);
 
   return {
     ...location,
@@ -414,12 +433,9 @@ function inferOpeningHours(category: string, target: Date) {
   const ranges: Record<string, [string, string, boolean]> = {
     cafe: ["0600", "2300", false],
     food: ["0700", "2300", false],
-    restaurant: ["1000", "2300", false],
-    bakery: ["0500", "1400", false],
     viewpoint: ["0000", "2400", true],
     nature: ["0000", "2400", true],
     "photo-op": ["0000", "2400", true],
-    park: ["0600", "2200", false],
     garden: ["0800", "2000", false],
     culture: ["1000", "1800", false]
   };

@@ -36,7 +36,6 @@ import {
   User,
   XCircle
 } from "lucide-react";
-import ExploreAroundYou from "../components/ExploreAroundYou.jsx";
 import RouteCinematic from "../components/RouteCinematic.jsx";
 
 const videoUrl =
@@ -168,14 +167,10 @@ const pageContent = {
 };
 
 const modalUrlMap = {
-  planner: "plan-route",
   hidden: "hidden-spots",
   photo: "photo-locations",
   local: "local-favorites",
-  auth: "auth",
-  intelligence: "location-intelligence",
-  exploreAround: "explore-around-you",
-  signupPrompt: "signup-prompt"
+  auth: "auth"
 };
 
 const modalFromUrlMap = Object.fromEntries(Object.entries(modalUrlMap).map(([key, value]) => [value, key]));
@@ -205,6 +200,7 @@ function OffTrailProvider({ children, initialView = null, initialContentPage = n
   const [auth, setAuth] = useState({ user: null, isAuthenticated: false });
   const [savedRoutes, setSavedRoutes] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [selectedRouteId, setSelectedRouteId] = useState(null);
   const navigationStackRef = useRef([]);
   const toastTimerRef = useRef(null);
   const [routeState, setRouteState] = useState({
@@ -226,10 +222,12 @@ function OffTrailProvider({ children, initialView = null, initialContentPage = n
     const storedAuth = readStorage("offtrail-auth", null);
     const storedRoutes = readStorage("offtrail-routes", []);
     const storedFavorites = readStorage("offtrail-favorites", []);
+    const storedRouteState = readStorage("offtrail-route-state", null);
     const urlState = parseUrlState();
     if (storedAuth?.user) setAuth({ user: storedAuth.user, isAuthenticated: true });
     setSavedRoutes(storedRoutes);
     setFavorites(storedFavorites);
+    if (storedRouteState) setRouteState((state) => ({ ...state, ...storedRouteState }));
     if (urlState.modal) setModal(urlState.modal);
     if (urlState.menuOpen) setMenuOpen(true);
     if (urlState.contentPage) {
@@ -273,6 +271,10 @@ function OffTrailProvider({ children, initialView = null, initialContentPage = n
   useEffect(() => {
     writeStorage("offtrail-favorites", favorites);
   }, [favorites]);
+
+  useEffect(() => {
+    writeStorage("offtrail-route-state", routeState);
+  }, [routeState]);
 
   function getSnapshot(overrides = {}) {
     return {
@@ -350,7 +352,7 @@ function OffTrailProvider({ children, initialView = null, initialContentPage = n
         preferences: Array.from(new Set([...state.preferences, ...preferences]))
       }));
     }
-    openModal("planner");
+    navigateTo("routeDiscovery");
   }
 
   function openContent(page) {
@@ -410,6 +412,8 @@ function OffTrailProvider({ children, initialView = null, initialContentPage = n
     signOut,
     savedRoutes,
     setSavedRoutes,
+    selectedRouteId,
+    setSelectedRouteId,
     favorites,
     setFavorites,
     routeState,
@@ -425,7 +429,7 @@ function OffTrailProvider({ children, initialView = null, initialContentPage = n
 
 function OffTrailApp() {
   const { view, modal, toast, closeOverlay, notify } = useOffTrail();
-  const usesFoundationShell = view === "home" || view === "routeDiscovery" || view === "nearby" || view === "layover" || view === "error";
+  const usesFoundationShell = view === "home" || view === "routeDiscovery" || view === "nearby" || view === "layover";
 
   return (
     <main className={`app-shell ${usesFoundationShell ? "uses-foundation-shell" : ""}`}>
@@ -439,7 +443,6 @@ function OffTrailApp() {
       {view === "routeDiscovery" && <JourneyRouteDiscoveryPage />}
       {view === "nearby" && <ExploreAroundYouPage />}
       {view === "layover" && <LayoverPage />}
-      {view === "error" && <DiscoveryErrorPage />}
       {view === "results" && <ResultsPage />}
       {view === "itinerary" && <ItineraryPage />}
       {view === "content" && <ContentPage />}
@@ -448,21 +451,17 @@ function OffTrailApp() {
       {view === "profile" && <ProfilePage />}
       {view === "routeDetail" && <RouteDetailPage />}
       <SlideMenu />
-      {modal === "planner" && <PlannerModal />}
       {modal === "hidden" && <HiddenSpotsModal />}
       {modal === "photo" && <PhotoModal />}
       {modal === "local" && <LocalFavoritesModal />}
       {modal === "auth" && <AuthModal />}
-      {modal === "intelligence" && <LocationIntelligenceOverlay />}
-      {modal === "exploreAround" && <ExploreAroundYou onClose={closeOverlay} notify={notify} />}
-      {modal === "signupPrompt" && <SignupPrompt />}
       {toast && <Toast {...toast} />}
     </main>
   );
 }
 
 function LandingPage() {
-  const { navigateTo, setMenuOpen, setAccountOpen, accountOpen, auth, setModal, setRouteState, notify } = useOffTrail();
+  const { navigateTo, setMenuOpen, setAccountOpen, accountOpen, auth, setModal, setRouteState, notify, openContent } = useOffTrail();
   const plannerRef = useRef(null);
   const fromInputRef = useRef(null);
   const [from, setFrom] = useState("");
@@ -545,7 +544,7 @@ function LandingPage() {
   ];
   const featureCards = [
     [Navigation, "Explore Nearby", "Discovery based on current location or searching a specific city.", "Scan nearby", exploreNearMe],
-    [MapPin, "Stopover Nearby", "Use Nearby at stations, airports, or cities to find verified places around a short stop.", "Search nearby", exploreNearMe],
+    [Clock, "Layover Discovery", "Find verified stops that fit your available time and return buffer at a station or airport.", "Plan a layover", () => navigateTo("layover")],
     [Heart, "Saved Gems", "Your personal map and notes, kept safe and accessible on device.", "View saved", () => navigateTo("favorites")]
   ];
 
@@ -584,6 +583,11 @@ function LandingPage() {
               <div className="stitch-v2-cta-row">
                 <button className="stitch-v2-primary" type="button" onClick={() => planRoute()}>Plan My Route</button>
                 <button className="stitch-v2-secondary" type="button" onClick={exploreNearMe}>Explore Near Me</button>
+              </div>
+              <div className="stitch-v2-quick-filters" aria-label="Quick filter shortcuts">
+                <button type="button" onClick={() => setModal("hidden")}><Gem size={14} /> Hidden gems</button>
+                <button type="button" onClick={() => setModal("photo")}><Camera size={14} /> Photo spots</button>
+                <button type="button" onClick={() => setModal("local")}><Compass size={14} /> Local favorites</button>
               </div>
             </div>
 
@@ -744,498 +748,11 @@ function LandingPage() {
           <nav aria-label="Footer navigation">
             <a href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
             <a href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved Gems</a>
+            <button type="button" onClick={() => openContent("how")}>How It Works</button>
           </nav>
         </div>
       </footer>
     </section>
-  );
-}
-
-function AppShell({ active = "explore", className = "", children }) {
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
-  const frameRef = useRef(null);
-  const showShellNav = !className.includes("landing-page");
-
-  function handlePointerMove(event) {
-    if (frameRef.current) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const pointerX = event.clientX;
-    const pointerY = event.clientY;
-    frameRef.current = window.requestAnimationFrame(() => {
-      const x = ((pointerX - rect.left) / rect.width - 0.5) * 18;
-      const y = ((pointerY - rect.top) / rect.height - 0.5) * 18;
-      setParallax({ x, y });
-      frameRef.current = null;
-    });
-  }
-
-  return (
-    <section
-      className={`gf-shell ${className}`}
-      onPointerMove={handlePointerMove}
-      style={{ "--gf-parallax-x": `${parallax.x}px`, "--gf-parallax-y": `${parallax.y}px` }}
-    >
-      <WildernessBackdrop />
-      {showShellNav && <WildernessNavbar active={active} />}
-      <main className="gf-main">{children}</main>
-    </section>
-  );
-}
-
-function WildernessBackdrop() {
-  return (
-    <div className="gf-background" aria-hidden="true">
-      <img className="gf-background-fallback" src={wildernessHeroUrl} alt="" />
-      <video className="gf-background-video" id="hero-video" src={videoUrl} autoPlay loop muted playsInline poster={wildernessHeroUrl} />
-      <div className="gf-background-shade" />
-    </div>
-  );
-}
-
-function WildernessNavbar({ active }) {
-  const { setView, setModal, setMenuOpen, auth, accountOpen, setAccountOpen } = useOffTrail();
-  const links = [
-    ["explore", "Explore", "home"],
-    ["nearby", "Nearby", "nearby"],
-    ["saved", "Saved", "favorites"]
-  ];
-
-  return (
-    <header className="gf-navbar">
-      <button className="gf-logo" type="button" onClick={() => setView("home")} aria-label="OffTrail home">
-        <Gem size={30} />
-        <span>OffTrail</span>
-      </button>
-      <nav className="gf-nav-links" aria-label="Primary navigation">
-        {links.map(([key, label, viewName]) => (
-          <button
-            key={key}
-            className={active === key ? "is-active" : ""}
-            type="button"
-            onClick={() => setView(viewName)}
-          >
-            {label}
-          </button>
-        ))}
-        <button
-          className="gf-nav-account-link"
-          type="button"
-          onClick={() => (auth.isAuthenticated ? setView("dashboard") : setModal("auth"))}
-        >
-          Account
-        </button>
-      </nav>
-      <div className="gf-nav-actions">
-        <button className="gf-menu-button" type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu">
-          <Menu size={18} />
-        </button>
-        <div className="account-wrap">
-          <button
-            className="gf-account-button"
-            type="button"
-            onClick={() => (auth.isAuthenticated ? setAccountOpen(!accountOpen) : setModal("auth"))}
-          >
-            <User size={17} />
-            <span>Account</span>
-          </button>
-          {accountOpen && <AccountDropdown />}
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function FoundationPage({ active, eyebrow, title, description, action, onAction }) {
-  const { setModal } = useOffTrail();
-  return (
-    <AppShell active={active}>
-      <section className="gf-foundation-panel">
-        <p className="gf-eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
-        <p>{description}</p>
-        <button className="gf-primary-button" type="button" onClick={() => setModal(onAction)}>
-          <ArrowRight size={18} />
-          {action}
-        </button>
-      </section>
-    </AppShell>
-  );
-}
-
-function MobileBottomNav({ active }) {
-  const { setView } = useOffTrail();
-  const items = [
-    ["explore", "Explore", "home", Compass],
-    ["nearby", "Nearby", "nearby", MapPin],
-    ["saved", "Saved", "favorites", Gem]
-  ];
-
-  return (
-    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-      {items.map(([key, label, viewName, Icon]) => (
-        <button key={key} className={active === key ? "is-active" : ""} type="button" onClick={() => setView(viewName)}>
-          <Icon size={18} />
-          <span>{label}</span>
-        </button>
-      ))}
-    </nav>
-  );
-}
-
-function HeroSection() {
-  const { setView, setModal, auth } = useOffTrail();
-
-  return (
-    <section className="wilderness-hero">
-      <div className="hero-copy-panel">
-        <SectionHeader eyebrow="Next-gen discovery" title="Discover verified hidden gems along your route" />
-        <p>
-          Practical journey discovery for routes, layovers, and nearby exploration - uncover hidden gems,
-          viewpoints, gardens, local favorites, and photogenic places most travelers miss.
-        </p>
-       
-        <div className="hero-actions">
-          <button className="wilderness-secondary" type="button" onClick={() => setView("nearby")}>
-         <Navigation size={18} />
-    Explore Around You
-          </button>
-        </div>
-       
-        <div className="hero-category-row">
-          <button type="button" onClick={() => setModal("hidden")}><Gem size={14} /> Hidden gems</button>
-          <button type="button" onClick={() => setModal("photo")}><Camera size={14} /> Photo spots</button>
-          <button type="button" onClick={() => setModal("local")}><Compass size={14} /> Local favorites</button>
-        </div>
-        <div className="tactical-stats" aria-label="OffTrail discovery stats">
-          <Stat label="Data nodes" value="12.4K" />
-          <Stat label="Open-late checks" value="24h" />
-          <Stat label="Route precision" value="99%" />
-        </div>
-      </div>
-
-      <div className="hero-visual-panel">
-        <AnimatedRouteMap
-          route={null}
-          locations={wildernessMockPlaces}
-          selected={new Set(wildernessMockPlaces.slice(0, 2).map((place) => place.id))}
-          variant="hero"
-        />
-        <div className="floating-feature-card route-intel-card">
-          <Navigation size={20} />
-          <div>
-            <strong>Route Intelligence</strong>
-            <span>Every POI scored by detour, rarity, hours, and vibe.</span>
-          </div>
-        </div>
-        <button className="floating-feature-card realtime-card" type="button" onClick={() => setModal("intelligence")}>
-          <img src={intelligencePreviewUrl} alt="" />
-          <span>
-            <strong>Real-time Location Intelligence</strong>
-            <small>Photos, ratings, and insider tips for every stop</small>
-          </span>
-          <ArrowRight size={18} />
-        </button>
-        <button
-          className="floating-feature-card archive-card"
-          type="button"
-          onClick={() => (auth.isAuthenticated ? setView("dashboard") : setModal("signupPrompt"))}
-        >
-          <MapIcon size={20} />
-          <span>
-            <strong>Discovery Archive</strong>
-            <small>Save routes and revisit favorite gems.</small>
-          </span>
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function FeatureBento() {
-  const { setView } = useOffTrail();
-  return (
-    <section className="wilderness-bento" aria-label="OffTrail capabilities">
-      {[
-        {
-          icon: Route,
-          title: "Journey Route Discovery",
-          copy: "Trace a full start-to-destination path, then reveal hidden places one by one along the corridor.",
-          action: "Build route",
-          onClick: () => setView("routeDiscovery")
-        },
-        {
-          icon: Compass,
-          title: "Explore Around You",
-          copy: "Use a 2 to 10 km radar to find nearby gems based on available time, safety, and mood.",
-          action: "Activate scan",
-          onClick: () => setView("nearby")
-        },
-        {
-          icon: Clock,
-          title: "Layover Discovery",
-          copy: "Turn odd-hour waits into practical, open-now, walkable options near your station.",
-          action: "See layover logic",
-          onClick: () => setView("routeDiscovery")
-        }
-      ].map((item) => {
-        const Icon = item.icon;
-        return (
-          <button className="wilderness-bento-card" type="button" key={item.title} onClick={item.onClick}>
-            <span className="bento-icon"><Icon size={24} /></span>
-            <h3>{item.title}</h3>
-            <p>{item.copy}</p>
-            <strong>{item.action} <ArrowRight size={15} /></strong>
-          </button>
-        );
-      })}
-    </section>
-  );
-}
-
-function SocialLink({ href, label, children }) {
-  return (
-    <a href={href} aria-label={label} target="_blank" rel="noopener noreferrer">
-      {children}
-    </a>
-  );
-}
-
-function PlannerModal() {
-  const { routeState, setRouteState, setModal, setView, notify, dismissOverlay } = useOffTrail();
-  const [origin, setOrigin] = useState(routeState.origin?.label || "");
-  const [destination, setDestination] = useState(routeState.destination?.label || "");
-  const [layovers, setLayovers] = useState(routeState.layovers || []);
-  const [departureTime, setDepartureTime] = useState(routeState.departureTime || toDatetimeLocal(new Date()));
-  const [radius, setRadius] = useState(routeState.radius || 5);
-  const [preferences, setPreferences] = useState(new Set(routeState.preferences || []));
-  const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!loading) return undefined;
-    const interval = window.setInterval(() => setLoadingStep((step) => (step + 1) % 3), 950);
-    return () => window.clearInterval(interval);
-  }, [loading]);
-
-  async function discoverRoute() {
-    if (loading) return;
-    if (!origin.trim() || !destination.trim()) {
-      notify("From and To locations are required.", "error");
-      return;
-    }
-    if (isSameLocationInput(origin, destination)) {
-      const message = "Starting point and destination must be different.";
-      setError(message);
-      notify(message, "error");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const [originPlace, destinationPlace, layoverPlaces] = await Promise.all([
-        geocode(origin),
-        geocode(destination),
-        Promise.all(
-          layovers
-            .filter((layover) => layover.label?.trim())
-            .map(async (layover) => {
-              const place = await geocode(layover.label);
-              const timeAvailable = minutesBetweenTimes(layover.arrivalTime, layover.departureTime) || layover.timeAvailable || 120;
-              return {
-                ...place,
-                arrivalTime: layover.arrivalTime,
-                departureTime: layover.departureTime,
-                maxDistance: layover.maxDistance,
-                timeAvailable
-              };
-            })
-        )
-      ]);
-
-      const body = {
-        originLat: originPlace.lat,
-        originLng: originPlace.lng,
-        destinationLat: destinationPlace.lat,
-        destinationLng: destinationPlace.lng,
-        origin: originPlace.name || originPlace.label || origin,
-        destination: destinationPlace.name || destinationPlace.label || destination,
-        departureTime,
-        layovers: layoverPlaces.map((layover) => ({
-          location: layover.name || layover.label,
-          lat: layover.lat,
-          lng: layover.lng,
-          coordinates: { lat: layover.lat, lng: layover.lng },
-          arrivalTime: layover.arrivalTime,
-          departureTime: layover.departureTime,
-          maxDistance: layover.maxDistance,
-          timeAvailable: layover.timeAvailable
-        })),
-        radius,
-        filters: Array.from(preferences)
-      };
-
-      const response = await fetch("/api/discover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        const message = result.error || "Route discovery failed.";
-        const discoveryError = classifyDiscoveryError(message);
-        const publicMessage = friendlyDiscoveryMessage(discoveryError, message);
-        setRouteState((state) => ({ ...state, results: null, selectedLocationIds: [], discoveryError }));
-        setError(publicMessage);
-        notify(publicMessage, "error", () => setModal("planner"));
-        dismissOverlay();
-        setView("error");
-        return;
-      }
-
-      setRouteState({
-        origin: originPlace,
-        destination: destinationPlace,
-        layovers: layoverPlaces,
-        preferences: Array.from(preferences),
-        radius,
-        departureTime,
-        date: departureTime.slice(0, 10),
-        results: result,
-        selectedLocationIds: result.locations.slice(0, 3).map((location) => location.id),
-        discoveryError: result.locations?.length
-          ? null
-          : {
-              type: "empty",
-              message: "No verified hidden places came back for this route. Try a wider radius or fewer filters."
-            }
-      });
-      dismissOverlay();
-      if (result.locations?.length) {
-        setView("results");
-        notify(`Found ${result.total} places along your route.`);
-      } else {
-        setView("error");
-        notify("No hidden places found for this route yet.", "info");
-      }
-    } catch (error) {
-      console.warn("Discovery error:", error);
-      const message = error instanceof Error ? error.message : "Failed to discover route.";
-      const discoveryError = classifyDiscoveryError(message);
-      const publicMessage = friendlyDiscoveryMessage(discoveryError, message);
-      setRouteState((state) => ({ ...state, results: null, selectedLocationIds: [], discoveryError }));
-      setError(publicMessage);
-      notify(publicMessage, "error", () => setModal("planner"));
-      dismissOverlay();
-      setView("error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function submitPlanner(event) {
-    event.preventDefault();
-    setSubmitted(true);
-    await discoverRoute();
-  }
-
-  const originError = submitted && !origin.trim() ? "Choose a start location." : "";
-  const destinationError = submitted && !destination.trim() ? "Choose a destination." : "";
-
-  return (
-    <Modal title="Plan My Route" onClose={() => setModal(null)} size="wide">
-      {loading && <LoadingRoute step={loadingStep} />}
-      {error && <p className="form-error helper-text" role="alert">{error}</p>}
-      <form className="planner-grid" onSubmit={submitPlanner}>
-          <PlaceInput label="From" value={origin} onChange={setOrigin} placeholder="Paris, France or 48.8566,2.3522" error={originError} valid={submitted && Boolean(origin.trim())} disabled={loading} />
-          <PlaceInput label="To" value={destination} onChange={setDestination} placeholder="Munich, Germany or 48.1351,11.582" error={destinationError} valid={submitted && Boolean(destination.trim())} disabled={loading} />
-          <label className="field is-valid time-input-section">
-            <span>Departure Date & Time</span>
-            <input
-              type="datetime-local"
-              value={departureTime}
-              min={toDatetimeLocal(new Date())}
-              onChange={(event) => setDepartureTime(event.target.value)}
-              required
-              disabled={loading}
-            />
-          </label>
-          <label className="field">
-            <span>Search radius: {radius} km</span>
-            <input type="range" min="1" max="10" value={radius} onChange={(event) => setRadius(Number(event.target.value))} disabled={loading} />
-          </label>
-          <div className="layover-section">
-            <div className="section-heading">
-              <h3 className="section-header">Layovers</h3>
-              <button
-                className="mini-button liquid-glass"
-                type="button"
-                disabled={loading}
-                onClick={() =>
-                  setLayovers([
-                    ...layovers,
-                    {
-                      id: crypto.randomUUID(),
-                      label: "",
-                      arrivalTime: "03:00",
-                      departureTime: "07:00",
-                      maxDistance: 2,
-                      timeAvailable: 240
-                    }
-                  ])
-                }
-              >
-                <Plus size={14} />
-                Add Layover
-              </button>
-            </div>
-            {layovers.length === 0 && <p className="muted">Optional stops with time available.</p>}
-            {layovers.map((layover) => (
-              <div className="layover-row" key={layover.id}>
-                <PlaceInput label="Layover" value={layover.label} onChange={(value) => updateLayover(setLayovers, layover.id, { label: value })} placeholder="Munich, Germany" disabled={loading} />
-                <label className="field">
-                  <span>Arrival Time</span>
-                  <input type="time" value={layover.arrivalTime || "03:00"} onChange={(event) => updateLayover(setLayovers, layover.id, { arrivalTime: event.target.value })} disabled={loading} />
-                </label>
-                <label className="field">
-                  <span>Departure Time</span>
-                  <input type="time" value={layover.departureTime || "07:00"} onChange={(event) => updateLayover(setLayovers, layover.id, { departureTime: event.target.value })} disabled={loading} />
-                </label>
-                <label className="field">
-                  <span>Max distance: {layover.maxDistance || 2} km</span>
-                  <input type="range" min="0.5" max="10" step="0.5" value={layover.maxDistance || 2} onChange={(event) => updateLayover(setLayovers, layover.id, { maxDistance: Number(event.target.value) })} disabled={loading} />
-                </label>
-                <button className="icon-only liquid-glass" type="button" aria-label="Remove layover" disabled={loading} onClick={() => setLayovers(layovers.filter((item) => item.id !== layover.id))}>
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="preferences-panel liquid-glass">
-            <h3 className="section-header">Preferences</h3>
-            <div className="checkbox-grid">
-              {preferenceOptions.map((option) => (
-                <label className="check-row checkbox-wrapper" key={option.key}>
-                  <input
-                    className="checkbox"
-                    type="checkbox"
-                    checked={preferences.has(option.key)}
-                    disabled={loading}
-                    onChange={() => toggleSet(preferences, setPreferences, option.key)}
-                  />
-                  <span>{option.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <button className="submit-route discover-route-btn liquid-glass-strong" type="submit" disabled={loading}>
-            {loading ? <Loader2 className="spin" size={20} /> : <Search size={20} />}
-            {loading ? "Discovering..." : "Discover Route"}
-          </button>
-        </form>
-    </Modal>
   );
 }
 
@@ -1317,7 +834,6 @@ function JourneyRouteDiscoveryPage() {
   const [preferences, setPreferences] = useState(new Set(routeState.preferences || ["nature", "viewpoint", "hidden", "photo-op"]));
   const [layovers, setLayovers] = useState(routeState.layovers?.length ? routeState.layovers : []);
   const [results, setResults] = useState(routeState.results);
-  const [selectedPlace, setSelectedPlace] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [discoveryState, setDiscoveryState] = useState(routeState.discoveryError || null);
@@ -1331,7 +847,6 @@ function JourneyRouteDiscoveryPage() {
         .slice(0, 4),
     [visibleLocations]
   );
-  const selected = new Set(routeState.selectedLocationIds || []);
 
   async function discoverRoute(event) {
     event?.preventDefault?.();
@@ -1448,6 +963,7 @@ function JourneyRouteDiscoveryPage() {
       });
       notify(result.locations?.length ? `Found ${result.total} places along your route.` : "No hidden places found for this route yet.", result.locations?.length ? "success" : "info");
       setScanStage(result.locations?.length ? "complete" : "empty");
+      if (result.locations?.length) setView("results");
     } catch (error) {
       console.warn("Journey discovery error:", error);
       const message = error instanceof Error ? error.message : "Failed to discover route.";
@@ -1491,10 +1007,6 @@ function JourneyRouteDiscoveryPage() {
       submitted={submitted}
       onSubmit={discoverRoute}
       results={results}
-      visibleLocations={visibleLocations}
-      selected={selected}
-      selectedPlace={selectedPlace}
-      setSelectedPlace={setSelectedPlace}
       discoveryState={discoveryState}
       scanStage={scanStage}
       favorites={favorites}
@@ -1704,17 +1216,12 @@ function RouteMapPlannerPage({
   submitted,
   onSubmit,
   results,
-  visibleLocations,
-  selected = new Set(),
-  selectedPlace,
-  setSelectedPlace,
   discoveryState,
   scanStage,
   notify,
   setView,
   sampleMode = false
 }) {
-  const hasRoute = Boolean(results?.route);
   const routeDistance = results?.route?.distance || "664 km";
   const routeDuration = results?.route?.duration || "7 hr 30 min";
   const startLabel = results?.route?.segments?.[0]?.from || origin || "London";
@@ -1803,19 +1310,7 @@ function RouteMapPlannerPage({
       </aside>
 
       <section className="route-map-main" aria-label="Route map">
-        {hasRoute ? (
-          <AnimatedRouteMap
-            route={results.route}
-            locations={visibleLocations}
-            selected={selected}
-            onSelectPlace={setSelectedPlace}
-            variant="journey"
-            scanStage={scanStage}
-            loading={loading}
-          />
-        ) : (
-          <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
-        )}
+        <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
         <div className="route-map-topbar">
           <button type="button" onClick={() => setView("home")} aria-label="Back to OffTrail home"><ArrowLeft size={18} /></button>
           <strong>OffTrail</strong>
@@ -1856,427 +1351,8 @@ function RouteMapPlannerPage({
             <p>Checking real routes and verified stop data.</p>
           </article>
         )}
-        {visibleLocations.length > 0 && (
-          <section className="route-map-results" aria-label="Verified stops">
-            <div>
-              <h2>Verified stops</h2>
-              <span>{visibleLocations.length} found</span>
-            </div>
-            {visibleLocations.slice(0, 3).map((location, index) => (
-              <button type="button" key={location.id} onClick={() => setSelectedPlace(location)}>
-                <strong>{location.name}</strong>
-                <span>{location.detourLabel || location.distanceLabel || `${index + 1} stop`}</span>
-              </button>
-            ))}
-          </section>
-        )}
       </section>
-      {selectedPlace && <PlaceDetailDrawer place={selectedPlace} onClose={() => setSelectedPlace(null)} />}
     </main>
-  );
-}
-
-function StitchJourneyResultsPage({
-  origin,
-  setOrigin,
-  destination,
-  setDestination,
-  departureTime,
-  setDepartureTime,
-  travelMode,
-  setTravelMode,
-  radius,
-  setRadius,
-  preferences,
-  setPreferences,
-  layovers,
-  setLayovers,
-  loading,
-  submitted,
-  onSubmit,
-  results,
-  visibleLocations,
-  selected,
-  selectedPlace,
-  setSelectedPlace,
-  discoveryState,
-  scanStage,
-  favorites,
-  setFavorites,
-  toggleLocation,
-  layoverPlaces,
-  notify,
-  setView,
-  sampleMode = false
-}) {
-  const hasRoute = Boolean(results?.route);
-  const routeDistance = results?.route?.distance;
-  const routeDuration = results?.route?.duration;
-  const startLabel = results?.route?.segments?.[0]?.from || origin || "Origin";
-  const endLabel = results?.route?.segments?.at?.(-1)?.to || destination || "Destination";
-
-  return (
-    <main className="stitch-results-page">
-      <StitchTopNav active="routes" />
-      <div className="stitch-orb-bg" aria-hidden="true">
-        <span />
-        <span />
-      </div>
-      <section className="stitch-results-grid">
-        <aside className="stitch-mission-panel">
-          <form className="glass-card shimmer-border stitch-mission-card" onSubmit={onSubmit}>
-            <div className="stitch-mission-head">
-              <span className="font-label-caps text-label-caps text-tertiary">Route Planner</span>
-              <Gem className="text-primary" size={22} />
-            </div>
-            <h2 className="font-display-lg text-headline-lg">Route discovery</h2>
-            <p className="text-on-surface-variant">Enter two places, then choose how far you are willing to detour.</p>
-            {sampleMode && (
-              <div className="sample-data-warning" role="status" aria-live="polite">
-                <strong>SAMPLE PREVIEW — NOT PROVIDER VERIFIED</strong>
-                <span>These cards preview the interface and are styled differently from verified results.</span>
-              </div>
-            )}
-            <div className="stitch-route-fields">
-              <PlaceInput label="Origin" value={origin} onChange={setOrigin} placeholder="City, station, address" error={submitted && !origin.trim() ? "Origin is required." : ""} disabled={loading} />
-              <PlaceInput label="Destination" value={destination} onChange={setDestination} placeholder="City, station, address" error={submitted && !destination.trim() ? "Destination is required." : ""} disabled={loading} />
-              <label>
-                <span>Travel Date & Time</span>
-                <input type="datetime-local" value={departureTime} onChange={(event) => setDepartureTime(event.target.value)} disabled={loading} />
-              </label>
-              <label>
-                <span>Transport Mode</span>
-                <select value={travelMode} onChange={(event) => setTravelMode(event.target.value)} disabled={loading}>
-                  <option>Train</option>
-                  <option>Car</option>
-                  <option>Walking</option>
-                  <option>Cycling</option>
-                </select>
-              </label>
-            </div>
-            <div className="stitch-radius-mini">
-              <div>
-                <span className="font-label-caps text-label-caps">Route corridor</span>
-                <strong>{radius}KM</strong>
-              </div>
-              <input type="range" min="1" max="10" value={radius} onChange={(event) => setRadius(Number(event.target.value))} />
-            </div>
-            <details className="advanced-filter-panel">
-              <summary>Advanced filters</summary>
-              <FilterChips options={preferenceOptions} selected={preferences} onToggle={(key) => toggleSet(preferences, setPreferences, key)} />
-            </details>
-            <button className="stitch-export-button" type="submit" disabled={loading}>
-              {loading ? <Loader2 className="spin" size={18} /> : <Search size={18} />}
-              <span>{loading ? "Checking real routes..." : "Plan My Route"}</span>
-              <Compass size={18} />
-            </button>
-          </form>
-          {hasRoute && (
-            <div className="glass-card stitch-tactical-stats" aria-label="Verified route summary">
-              <div>Distance: {routeDistance}</div>
-              <div>Duration: {routeDuration}</div>
-              <div>Verified stops: {visibleLocations.length}</div>
-            </div>
-          )}
-        </aside>
-
-        <section className="stitch-corridor-stage">
-          <div className="glass-card stitch-corridor-map">
-            <img src={stitchMapUrl} alt="" onError={hideBrokenImage} />
-            <div className="stitch-map-gradient" aria-hidden="true" />
-            <StitchRouteSvg route={results?.route} locations={visibleLocations} selected={selected} onSelectPlace={setSelectedPlace} loading={loading} scanStage={scanStage} />
-            <div className="stitch-live-feed">
-              <i />
-              <span>Verified data only</span>
-            </div>
-            {hasRoute && (
-              <div className="stitch-dest-chip">
-                <span>{endLabel}</span>
-                <strong>DESTINATION</strong>
-              </div>
-            )}
-            <div className="stitch-map-actions">
-              <button type="button" onClick={() => notify("Map preview focused.")} aria-label="Focus map preview"><Search size={18} /></button>
-              <button type="button" onClick={() => notify("Map layers will be configurable when provider maps are connected.")} aria-label="Map layers"><MapIcon size={18} /></button>
-            </div>
-            {!visibleLocations.length && (
-              <div className="stitch-map-empty glass-card">
-                <Compass size={32} />
-                <strong>{loading ? scanStageHeadline(scanStage) : discoveryState?.type ? "Scan stopped safely" : "Plan a route to load verified stops"}</strong>
-                <p>{loading ? "OffTrail is checking real routes and provider-backed places." : discoveryState?.message || "Enter a real origin and destination, then plan the route. Verified stops appear after source data is returned."}</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="stitch-found-panel">
-          <div className="stitch-found-head">
-            <h3 className="font-headline-lg-mobile text-on-surface">Found Gems</h3>
-            <span>{visibleLocations.length ? "Sorted by shortest detour" : "Verified results only"}</span>
-          </div>
-          <div className="stitch-found-list custom-scrollbar">
-            {visibleLocations.length ? (
-              visibleLocations.map((location, index) => (
-                <StitchGemResultCard
-                  key={location.id}
-                  place={location}
-                  index={index}
-                  selected={selected.has(location.id)}
-                  saved={favorites.some((favorite) => favorite.id === location.id)}
-                  onSelect={() => setSelectedPlace(location)}
-                  onToggle={() => toggleLocation(location.id)}
-                  onSave={() => {
-                    setFavorites(toggleFavorite(favorites, location));
-                    notify("Favorite updated.");
-                  }}
-                />
-              ))
-            ) : (
-              <DiscoveryStatePanel
-                type={discoveryState?.type || "idle"}
-                message={discoveryState?.message}
-                onRetry={onSubmit}
-                onNearby={() => setView("nearby")}
-              />
-            )}
-          </div>
-        </section>
-      </section>
-      {layoverPlaces.length > 0 && <LayoverDiscoveryPanel suggestions={layoverPlaces} onSelect={setSelectedPlace} layovers={layovers} />}
-      {selectedPlace && <PlaceDetailDrawer place={selectedPlace} onClose={() => setSelectedPlace(null)} />}
-    </main>
-  );
-}
-
-function StitchTopNav({ active = "explore" }) {
-  const { navigateTo, setModal, setMenuOpen, auth } = useOffTrail();
-  return (
-    <header className="stitch-system-nav">
-      <a className="stitch-system-brand" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>
-        OffTrail
-      </a>
-      <nav>
-        <a className={active === "explore" ? "is-active" : ""} href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>Explore</a>
-        <a className={active === "nearby" ? "is-active" : ""} href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
-        <a className={active === "saved" ? "is-active" : ""} href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved</a>
-      </nav>
-      <div>
-        <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={19} /></button>
-        <button type="button" onClick={() => (auth.isAuthenticated ? navigateTo("profile") : setModal("auth"))} aria-label="Account"><User size={19} /></button>
-      </div>
-    </header>
-  );
-}
-
-function StitchRouteSvg({ route, locations = [], selected = new Set(), onSelectPlace, loading, scanStage }) {
-  const bounds = route?.path?.length ? makeBounds(route.path, locations.map((location) => placeCoordinates(location))) : null;
-  const path = bounds ? routePathData(route.path, bounds) : "";
-  const pins = locations.map((location, index) => ({
-    ...location,
-    point: routeLocationPoint(location, index, bounds, route?.path)
-  }));
-
-  return (
-    <div className={`stitch-route-layer ${loading ? "is-loading" : ""} ${path ? "has-route" : "no-route"}`}>
-      <svg className="stitch-route-svg" fill="none" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {path && <path className="glow-line" d={path} stroke="#7cd5d5" strokeLinecap="round" strokeWidth="1.2" />}
-        {pins.slice(0, 10).map((pin) => (
-          <path
-            key={`branch-${pin.id}`}
-            className="stitch-branch-line"
-            d={`M ${pin.point.routeX || pin.point.x} ${pin.point.routeY || 50} Q ${(pin.point.x + (pin.point.routeX || pin.point.x)) / 2} ${pin.point.y - 10}, ${pin.point.x} ${pin.point.y}`}
-          />
-        ))}
-      </svg>
-      {loading && (
-        <div className="stitch-loading-scan" role="status" aria-live="polite">
-          <Gem size={28} />
-          <strong>{scanStageLabel(scanStage)}</strong>
-        </div>
-      )}
-      {pins.map((pin, index) => (
-        <button
-          key={pin.id}
-          className={`stitch-map-pin pin-float ${selected.has(pin.id) ? "is-selected" : ""}`}
-          type="button"
-          style={{ left: `${pin.point.x}%`, top: `${pin.point.y}%`, animationDelay: `${index * 180 - 500}ms` }}
-          onClick={() => onSelectPlace?.(pin)}
-          aria-label={`Open ${pin.name}`}
-        >
-          <span />
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function StitchGemResultCard({ place, index = 0, onSelect, onToggle, onSave, selected, saved }) {
-  const image = placeImageUrl(place);
-  const distance = detourLabel(place);
-  const source = sourceLabel(place);
-  const confidence = confidenceLabel(place);
-  const openStatus = openStatusLabel(place);
-  const reason = place.reason || place.description || "A verified place close enough to consider for this route.";
-  return (
-    <article
-      className={`glass-card group stitch-gem-result ${selected ? "is-selected" : ""} ${place.isSample ? "is-sample" : ""}`}
-      style={{ animationDelay: `${index * 90}ms` }}
-      onClick={onSelect}
-      tabIndex={0}
-      role="button"
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect?.();
-        }
-      }}
-    >
-      <div className="stitch-gem-image">
-        <img src={image} alt={place.name} onError={(event) => handlePlaceImageError(event, place)} />
-        <div />
-        {place.isSample && <strong className="sample-card-watermark">SAMPLE</strong>}
-        <span>{place.isSample ? "SAMPLE" : distance}</span>
-      </div>
-      <div className="stitch-gem-copy">
-        <div>{labelForType(place.type) || place.category || "Verified Place"}</div>
-        <h4>{place.name}</h4>
-        <p>{reason}</p>
-        <div className="result-badge-row">
-          {place.isSample ? <span>Sample preview</span> : source ? <span>Verified</span> : null}
-          <span>{openStatus}</span>
-          <span>{confidence}</span>
-          {source && <span>{source}</span>}
-          <span>{distance}</span>
-        </div>
-        <footer className="result-actions">
-          <button type="button" onClick={(event) => { event.stopPropagation(); onSave?.(); }} aria-label={saved ? "Remove saved gem" : "Save gem"}>
-            <Heart size={15} fill={saved ? "currentColor" : "none"} />
-            {saved ? "Saved" : "Save"}
-          </button>
-          <button type="button" onClick={(event) => { event.stopPropagation(); onToggle?.(); }}>
-            {selected ? "Added" : "Add stop"}
-          </button>
-          <a href={googleDirectionsUrl(place)} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
-            View map
-          </a>
-        </footer>
-      </div>
-    </article>
-  );
-}
-
-function RoutePlannerCard({
-  origin,
-  setOrigin,
-  destination,
-  setDestination,
-  departureTime,
-  setDepartureTime,
-  travelMode,
-  setTravelMode,
-  radius,
-  setRadius,
-  preferences,
-  setPreferences,
-  layovers,
-  setLayovers,
-  loading,
-  submitted,
-  onSubmit
-}) {
-  return (
-    <form className="route-planner-card wilderness-glass shimmer-border" onSubmit={onSubmit}>
-      <SectionHeader eyebrow="Active Journey" title="Route discovery" compact />
-      <PlaceInput label="Starting point" value={origin} onChange={setOrigin} placeholder="Bad Honnef" error={submitted && !origin.trim() ? "Choose a start point." : ""} disabled={loading} />
-      <PlaceInput label="Destination" value={destination} onChange={setDestination} placeholder="Munich" error={submitted && !destination.trim() ? "Choose a destination." : ""} disabled={loading} />
-      <div className="planner-inline-grid">
-        <label className="field is-valid">
-          <span>Travel date & time</span>
-          <input type="datetime-local" value={departureTime} onChange={(event) => setDepartureTime(event.target.value)} disabled={loading} />
-        </label>
-        <label className="field select-field">
-          <span>Transport mode</span>
-          <select value={travelMode} onChange={(event) => setTravelMode(event.target.value)} disabled={loading}>
-            <option>Train</option>
-            <option>Car</option>
-            <option>Walk</option>
-            <option>Bike</option>
-          </select>
-        </label>
-      </div>
-      <RadiusSelector min={1} max={10} value={radius} onChange={setRadius} label="Route corridor radius" />
-      <FilterChips options={preferenceOptions} selected={preferences} onToggle={(key) => toggleSet(preferences, setPreferences, key)} />
-      <div className="layover-mini-stack">
-        <div className="section-heading">
-          <span className="wilderness-eyebrow">Layover intelligence</span>
-          <button
-            className="tiny-glass-button"
-            type="button"
-            disabled={loading}
-            onClick={() =>
-              setLayovers([
-                ...layovers,
-                {
-                  id: crypto.randomUUID(),
-                  label: "",
-                  arrivalTime: "03:00",
-                  departureTime: "07:00",
-                  maxDistance: 2,
-                  timeAvailable: 240
-                }
-              ])
-            }
-          >
-            <Plus size={14} />
-            Add
-          </button>
-        </div>
-        {layovers.map((layover) => (
-          <div className="compact-layover" key={layover.id}>
-            <PlaceInput label="Layover" value={layover.label || layover.name || ""} onChange={(value) => updateLayover(setLayovers, layover.id, { label: value })} placeholder="Nuremberg Hbf" disabled={loading} />
-            <div className="planner-inline-grid">
-              <label className="field">
-                <span>Arrive</span>
-                <input type="time" value={layover.arrivalTime || "03:00"} onChange={(event) => updateLayover(setLayovers, layover.id, { arrivalTime: event.target.value })} disabled={loading} />
-              </label>
-              <label className="field">
-                <span>Leave</span>
-                <input type="time" value={layover.departureTime || "07:00"} onChange={(event) => updateLayover(setLayovers, layover.id, { departureTime: event.target.value })} disabled={loading} />
-              </label>
-            </div>
-          </div>
-        ))}
-      </div>
-      <button className="wilderness-primary full-width" type="submit" disabled={loading}>
-        {loading ? <Loader2 className="spin" size={18} /> : <Search size={18} />}
-        {loading ? "Mapping corridor..." : "Discover Route"}
-      </button>
-    </form>
-  );
-}
-
-function JourneySummaryCard({ origin, destination, radius, results, selectedCount }) {
-  return (
-    <section className="journey-summary-card wilderness-glass">
-      <div className="timeline-mini">
-        <span className="timeline-node is-start" />
-        <div>
-          <small>From</small>
-          <strong>{origin || "Origin"}</strong>
-        </div>
-        <span className="timeline-line" />
-        <span className="timeline-node is-end" />
-        <div>
-          <small>To</small>
-          <strong>{destination || "Destination"}</strong>
-        </div>
-      </div>
-      <div className="summary-stat-grid">
-        <Stat label="Gems found" value={results ? results.total : 0} />
-        <Stat label="Radius" value={`${radius} km`} />
-        <Stat label="Added" value={selectedCount || 0} />
-      </div>
-    </section>
   );
 }
 
@@ -2353,118 +1429,6 @@ function DiscoveryStatePanel({ type = "idle", message, onRetry, onNearby }) {
         </button>
       </div>
     </article>
-  );
-}
-
-function DiscoveryErrorPage() {
-  const { routeState, navigateTo, setModal } = useOffTrail();
-  const error = routeState.discoveryError || { type: "system", message: "The wilderness connection is weak. Our intelligence systems are recalibrating." };
-  const isNoGems = error.type === "empty";
-  const isCoordinates = error.type === "coordinates";
-  const state = {
-    coordinates: {
-      eyebrow: "Signal interrupted",
-      title: "Uncharted Coordinates",
-      copy: "OffTrail could not verify that location. Check the spelling or try a nearby station, landmark, or city center.",
-      image: unchartedCoordinatesUrl,
-      icon: Compass,
-      primary: "Try Again",
-      secondary: "Search Nearby"
-    },
-    empty: {
-      eyebrow: "No echoes detected",
-      title: "No verified stops found",
-      copy: "We could not find reliable places for this route and filter combination. Try increasing your detour time or choosing another vibe.",
-      image: silentPathUrl,
-      icon: Navigation,
-      primary: "Modify Route",
-      secondary: "Explore Nearby"
-    },
-    route: {
-      eyebrow: "No verified route",
-      title: "No verified route found",
-      copy: "OffTrail could not verify a real route for those inputs. We do not invent routes or places.",
-      image: signalInterruptedUrl,
-      icon: XCircle,
-      primary: "Modify Route",
-      secondary: "Explore Nearby"
-    },
-    system: {
-      eyebrow: "System recalibrating",
-      title: "Signal Interrupted",
-      copy: "Verified routing is not configured or the provider is temporarily unavailable. OffTrail stopped the scan instead of inventing a route.",
-      image: signalInterruptedUrl,
-      icon: XCircle,
-      primary: "Retry Scan",
-      secondary: "Explore Nearby"
-    }
-  }[error.type] || {
-    eyebrow: "System recalibrating",
-    title: "Signal Interrupted",
-    copy: "Verified routing is not configured or the provider is temporarily unavailable. OffTrail stopped the scan instead of inventing a route.",
-    image: signalInterruptedUrl,
-    icon: XCircle,
-    primary: "Retry Scan",
-    secondary: "Explore Nearby"
-  };
-  const Icon = state.icon;
-  const displayMessage = friendlyDiscoveryMessage(error, state.copy);
-
-  return (
-    <section className={`stitch-error-page ${isNoGems ? "is-no-gems" : ""} ${isCoordinates ? "is-coordinates" : ""}`}>
-      <img className="stitch-error-bg" src={state.image} alt="" aria-hidden="true" />
-      <div className="stitch-error-gradient" aria-hidden="true" />
-      <header className="stitch-error-nav">
-        <a className="stitch-wordmark" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>OffTrail</a>
-        <div>
-          <a href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
-        </div>
-      </header>
-      <main className="stitch-error-canvas">
-        {isNoGems ? (
-          <div className="stitch-empty-orbit">
-            <span /><span /><span />
-            <svg viewBox="0 0 200 200" aria-hidden="true">
-              <path d="M40,160 Q80,140 100,100 T160,40" />
-              <circle cx="40" cy="160" r="3" />
-              <circle cx="160" cy="40" r="3" />
-            </svg>
-            <div>
-              <Icon size={56} />
-              <strong>No Echoes Detected</strong>
-            </div>
-          </div>
-        ) : (
-          <div className="stitch-error-orb">
-            <Icon size={76} />
-            <i /><i /><i />
-          </div>
-        )}
-        <article className="stitch-error-card">
-          <span className="wilderness-eyebrow">{state.eyebrow}</span>
-          <h1>{state.title}</h1>
-          <p>{displayMessage}</p>
-          {isNoGems && (
-            <div className="stitch-radius-preview">
-              <span>Scan Radius</span>
-              <strong>{routeState.radius || 5}km</strong>
-              <div><i /></div>
-              <small><span>2km</span><span>20km</span></small>
-            </div>
-          )}
-          <div className="stitch-error-actions">
-            <button className="wilderness-primary" type="button" onClick={() => (isCoordinates ? setModal("planner") : navigateTo("routeDiscovery"))}>
-              <Search size={17} />
-              {state.primary}
-            </button>
-            <button className="wilderness-secondary" type="button" onClick={() => navigateTo("nearby")}>
-              <Navigation size={17} />
-              {state.secondary}
-            </button>
-          </div>
-        </article>
-      </main>
-    </section>
   );
 }
 
@@ -2764,6 +1728,26 @@ function LayoverPage() {
   );
 }
 
+function StitchTopNav({ active = "explore" }) {
+  const { navigateTo, setModal, setMenuOpen, auth } = useOffTrail();
+  return (
+    <header className="stitch-system-nav">
+      <a className="stitch-system-brand" href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>
+        OffTrail
+      </a>
+      <nav>
+        <a className={active === "explore" ? "is-active" : ""} href={viewHref("home")} onClick={(event) => handleViewNavigation(event, navigateTo, "home")}>Explore</a>
+        <a className={active === "nearby" ? "is-active" : ""} href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
+        <a className={active === "saved" ? "is-active" : ""} href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved</a>
+      </nav>
+      <div>
+        <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={19} /></button>
+        <button type="button" onClick={() => (auth.isAuthenticated ? navigateTo("profile") : setModal("auth"))} aria-label="Account"><User size={19} /></button>
+      </div>
+    </header>
+  );
+}
+
 function StitchSpatialRadarPage({
   location,
   setLocation,
@@ -3028,83 +2012,6 @@ function StitchRecommendationCard({ place, variant = "small", active, saved, onH
         </footer>
       </div>
     </article>
-  );
-}
-
-function ExploreAroundYouRadar({ userLocation, locations, radius, activeId, setActiveId, onSelect }) {
-  const pins = locations.map((location, index) => ({
-    ...location,
-    point: location.point || locationPoint(location, userLocation, index)
-  }));
-
-  return (
-    <section className="nearby-radar wilderness-glass">
-      <div className="radar-title">
-        <span>Radius</span>
-        <strong>{radius} km</strong>
-      </div>
-      <div className="radar-rings" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-      <svg className="radar-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        {pins.slice(0, 10).map((pin) => (
-          <path
-            key={pin.id}
-            className={`radar-connection ${activeId === pin.id ? "is-active" : ""}`}
-            d={`M 50 50 Q ${(50 + pin.point.x) / 2} ${(50 + pin.point.y) / 2 - 12}, ${pin.point.x} ${pin.point.y}`}
-            pathLength="1"
-          />
-        ))}
-      </svg>
-      <button className="radar-user-dot" type="button" aria-label="Your location">
-        <Navigation size={16} />
-      </button>
-      {pins.map((pin, index) => (
-        <button
-          key={pin.id}
-          className={`radar-pin ${activeId === pin.id ? "is-active" : ""}`}
-          style={{ left: `${pin.point.x}%`, top: `${pin.point.y}%`, animationDelay: `${index * 130}ms` }}
-          type="button"
-          aria-label={`${pin.name}, ${formatMeters(pin.distance || pin.distanceMeters || 0)} away`}
-          onMouseEnter={() => setActiveId(pin.id)}
-          onMouseLeave={() => setActiveId(null)}
-          onFocus={() => setActiveId(pin.id)}
-          onBlur={() => setActiveId(null)}
-          onClick={() => onSelect(pin)}
-        >
-          {pin.type === "photo_op" ? <Camera size={16} /> : <Gem size={16} />}
-          <span>{pin.name}</span>
-        </button>
-      ))}
-      {!pins.length && (
-        <div className="radar-empty-state">
-          <Compass size={28} />
-          <strong>No scan results yet</strong>
-          <span>Enter a location or allow browser location, then run Scan Nearby.</span>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function SectionHeader({ eyebrow, title, compact = false }) {
-  return (
-    <header className={`section-header-block ${compact ? "is-compact" : ""}`}>
-      <span>{eyebrow}</span>
-      <h1>{title}</h1>
-    </header>
-  );
-}
-
-function RadiusSelector({ min = 2, max = 10, value, onChange, label }) {
-  return (
-    <label className="radius-selector">
-      <span>{label}: <strong>{value} km</strong></span>
-      <input type="range" min={min} max={max} step="1" value={value} onChange={(event) => onChange(Number(event.target.value))} />
-      <small><span>{min}km</span><span>{max}km</span></small>
-    </label>
   );
 }
 
@@ -3585,52 +2492,13 @@ function PlaceDetailDrawer({ place, onClose }) {
   );
 }
 
-function LayoverDiscoveryPanel({ suggestions = [], layovers = [], onSelect }) {
-  const firstLayover = layovers[0];
-  const title = firstLayover
-    ? `${firstLayover.label || firstLayover.name || "Layover"}${firstLayover.arrivalTime && firstLayover.departureTime ? `, ${firstLayover.arrivalTime} - ${firstLayover.departureTime}` : ""}`
-    : "Add a layover to scan short-stop options";
-
-  return (
-    <section className="layover-discovery-panel wilderness-glass">
-      <img src={stationNightUrl} alt="" />
-      <div className="layover-panel-copy">
-        <SectionHeader eyebrow="Layover Discovery" title={title} compact />
-        <p>
-          Layover recommendations are created only from route results with real place data. Add a layover,
-          run discovery, then OffTrail prioritizes open, walkable, time-fit options.
-        </p>
-        <div className="layover-safety-tags">
-          <span><CheckCircle size={14} /> Safe late-night</span>
-          <span><Clock size={14} /> Open now first</span>
-          <span><MapPin size={14} /> Under 2 km</span>
-        </div>
-      </div>
-      <div className="layover-suggestion-grid">
-        {!suggestions.length && (
-          <div className="layover-empty-state">
-            No layover places loaded yet. Add a layover in the planner and run discovery.
-          </div>
-        )}
-        {suggestions.map((place) => (
-          <button className="layover-suggestion" type="button" key={place.id} onClick={() => onSelect(place)}>
-            <strong>{place.name}</strong>
-            <span>{place.distanceFromStationLabel} - {place.walkingTime} min walk</span>
-            <StatusBadge open={place.isOpenAtArrival} is24Hours={place.is24Hours} />
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function ResultsPage() {
   const { routeState, setRouteState, setView, setModal, auth, notify, savedRoutes, setSavedRoutes, favorites, setFavorites } = useOffTrail();
   const results = routeState.results;
   const [saving, setSaving] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState(null);
 
-  if (!results) return <EmptyState title="No route yet" action="Plan a route" onAction={() => setModal("planner")} />;
+  if (!results) return <EmptyState title="No route yet" action="Plan a route" onAction={() => setView("routeDiscovery")} />;
 
   const selected = new Set(routeState.selectedLocationIds);
 
@@ -3743,37 +2611,6 @@ function ResultsPage() {
   );
 }
 
-function RouteMap({ route, locations, selected }) {
-  const bounds = useMemo(() => makeBounds(route.path, locations), [route, locations]);
-  const polyline = route.path.map(([lat, lng]) => toPercent({ lat, lng }, bounds)).map((point) => `${point.x},${point.y}`).join(" ");
-
-  return (
-    <section className="map-shell liquid-glass-strong">
-      <svg className="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <polyline points={polyline} fill="none" stroke="rgba(255,255,255,.72)" strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-      {locations.map((location) => {
-        const point = toPercent(location, bounds);
-        return (
-          <button
-            key={location.id}
-            className={`map-pin pin-${location.category} ${selected.has(location.id) ? "is-selected" : ""}`}
-            type="button"
-            style={{ left: `${point.x}%`, top: `${point.y}%` }}
-            title={location.name}
-          >
-            <Gem size={13} />
-          </button>
-        );
-      })}
-      <div className="map-legend liquid-glass">
-        <span>Route corridor</span>
-        <span>{locations.length} pins</span>
-      </div>
-    </section>
-  );
-}
-
 function ItineraryPage() {
   const { routeState, setView, notify } = useOffTrail();
   const results = routeState.results;
@@ -3850,7 +2687,7 @@ function ContentPage() {
 }
 
 function DashboardPage() {
-  const { savedRoutes, setView } = useOffTrail();
+  const { savedRoutes, setView, setSelectedRouteId } = useOffTrail();
   return (
     <section className="app-page dashboard-page">
       <PageTopbar title="My Saved Routes" />
@@ -3867,7 +2704,7 @@ function DashboardPage() {
             />
             <h3>{route.origin?.name || "Origin"} -&gt; {route.destination?.name || "Destination"}</h3>
             <p>{route.date} - {route.spotsFound} spots found</p>
-            <button className="mini-button liquid-glass" type="button" onClick={() => setView("routeDetail")}>View Route</button>
+            <button className="mini-button liquid-glass" type="button" onClick={() => { setSelectedRouteId(route.id); setView("routeDetail"); }}>View Route</button>
           </article>
         ))}
       </div>
@@ -3962,8 +2799,8 @@ function ProfilePage() {
 }
 
 function RouteDetailPage() {
-  const { savedRoutes, setView } = useOffTrail();
-  const route = savedRoutes[0];
+  const { savedRoutes, setView, selectedRouteId } = useOffTrail();
+  const route = savedRoutes.find((item) => item.id === selectedRouteId) || null;
   return (
     <section className="app-page content-page">
       <PageTopbar title="Saved Route" />
@@ -4063,251 +2900,6 @@ function LocalFavoritesModal() {
         Browse Local Picks
         <ArrowRight size={18} />
       </button>
-    </Modal>
-  );
-}
-
-function LocationIntelligenceOverlay() {
-  const { setModal, notify } = useOffTrail();
-  const [locations, setLocations] = useState([]);
-  const [userLocation, setUserLocation] = useState({ lat: 64.134, lng: -21.467 });
-  const [stage, setStage] = useState(0);
-  const [activeId, setActiveId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [sheetMinimized, setSheetMinimized] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
-  const cardRefs = useRef({});
-  const dragStartRef = useRef(0);
-  const rafRef = useRef(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const position = await getBrowserPosition();
-        if (cancelled) return;
-        setUserLocation(position);
-        const response = await fetch("/api/location-intelligence", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            latitude: position.lat,
-            longitude: position.lng,
-            radius: 5000,
-            categories: ["hidden_gem", "photo_op", "viewpoint", "nature"]
-          })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Location intelligence failed.");
-        if (!cancelled) {
-          setLocations((data.locations || []).slice(0, 10));
-          setUserLocation(data.userLocation || position);
-        }
-      } catch (error) {
-        console.warn("Location intelligence overlay error:", error);
-        notify("Could not load real nearby places. Please try again.", "error");
-        if (!cancelled) setLocations([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [notify]);
-
-  useEffect(() => {
-    if (loading) return undefined;
-    const timers = [
-      window.setTimeout(() => setStage(1), 0),
-      window.setTimeout(() => setStage(2), 800),
-      window.setTimeout(() => setStage(3), 1500),
-      window.setTimeout(() => setStage(4), 2200)
-    ];
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [loading]);
-
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  const pins = locations.map((location, index) => ({
-    ...location,
-    point: locationPoint(location, userLocation, index)
-  }));
-
-  function closeOverlay() {
-    setModal(null);
-  }
-
-  function focusLocation(id) {
-    setActiveId(id);
-    cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    window.setTimeout(() => setActiveId((current) => (current === id ? null : current)), 1500);
-  }
-
-  function handleKeyDown(event, id) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      focusLocation(id);
-    }
-  }
-
-  function handleMouseMove(event) {
-    if (rafRef.current) return;
-    rafRef.current = window.requestAnimationFrame(() => {
-      const amount = 20;
-      setParallax({
-        x: (event.clientX / window.innerWidth - 0.5) * amount,
-        y: (event.clientY / window.innerHeight - 0.5) * amount
-      });
-      rafRef.current = null;
-    });
-  }
-
-  function handleTouchStart(event) {
-    dragStartRef.current = event.touches[0].clientY;
-    setDragOffset(0);
-  }
-
-  function handleTouchMove(event) {
-    const diff = event.touches[0].clientY - dragStartRef.current;
-    setDragOffset(diff > 0 ? diff : 0);
-  }
-
-  function handleTouchEnd() {
-    setSheetMinimized(dragOffset > 100);
-    setDragOffset(0);
-  }
-
-  return (
-    <section className="location-intelligence-overlay" onMouseMove={handleMouseMove} aria-label="Real-time Location Intelligence">
-      <div className="intelligence-map-bg" aria-hidden="true">
-        <img
-          src={intelligenceMapUrl}
-          alt=""
-          style={{ transform: `scale(1.05) translate(${parallax.x}px, ${parallax.y}px)` }}
-        />
-      </div>
-      <div className="intelligence-map-shade" aria-hidden="true" />
-
-      <button className="intelligence-close glass-surface" type="button" onClick={closeOverlay} aria-label="Back to OffTrail">
-        <ArrowLeft size={20} />
-      </button>
-
-      <div className="intelligence-title glass-surface">
-        <p className="label-caps">Spatial Radar</p>
-        <h2>Real-time Location Intelligence</h2>
-        <p>{loading ? "Preparing scan..." : "Nearby gems, photo ops, and viewpoints detected around you."}</p>
-      </div>
-
-      <svg className="connection-layer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        {pins.map((pin, index) => (
-          <path
-            key={pin.id}
-            className={`connection-line ${stage >= 3 ? "is-drawn" : ""} ${activeId === pin.id ? "is-active" : ""}`}
-            d={`M 50 50 Q ${(50 + pin.point.x) / 2} ${Math.min(50, pin.point.y) - 10}, ${pin.point.x} ${pin.point.y}`}
-            stroke={pin.type === "hidden_gem" ? "#ddb7ff" : pin.type === "photo_op" ? "#4cd7f6" : "#adc6ff"}
-            style={{ animationDelay: `${index * 150}ms` }}
-          />
-        ))}
-      </svg>
-
-      <div className={`user-location ${stage >= 1 ? "radar-active" : ""}`} aria-label="Your location">
-        <div className="radar-wave" />
-        <div className="user-pulse" />
-        <div className="user-dot" />
-      </div>
-
-      {loading ? (
-        <div className="intelligence-loading glass-surface">
-          <Loader2 className="spin" size={22} />
-          <span>Scanning nearby signals...</span>
-        </div>
-      ) : (
-        pins.map((pin, index) => (
-          <button
-            key={pin.id}
-            className={`intelligence-pin pin-${pin.type} ${stage >= 2 ? "is-visible" : ""} ${activeId === pin.id ? "is-active" : ""}`}
-            type="button"
-            style={{ left: `${pin.point.x}%`, top: `${pin.point.y}%`, animationDelay: `${index * 200}ms` }}
-            aria-label={`${pin.name}, ${formatMeters(pin.distance)} away`}
-            onMouseEnter={() => setActiveId(pin.id)}
-            onMouseLeave={() => setActiveId(null)}
-            onFocus={() => setActiveId(pin.id)}
-            onBlur={() => setActiveId(null)}
-            onClick={() => focusLocation(pin.id)}
-            onKeyDown={(event) => handleKeyDown(event, pin.id)}
-          >
-            {pin.type === "photo_op" ? <Camera size={17} /> : <Gem size={17} />}
-          </button>
-        ))
-      )}
-
-      <aside
-        className={`intelligence-bottom-sheet ${stage >= 4 ? "is-open" : ""} ${sheetMinimized ? "is-minimized" : ""}`}
-        style={{ transform: stage >= 4 ? (sheetMinimized ? "translateY(60%)" : `translateY(${dragOffset}px)`) : undefined }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="sheet-handle" aria-hidden="true" />
-        <div className="intelligence-card-list">
-          {!loading && !pins.length && (
-            <div className="location-empty">No verified nearby places were returned for this scan.</div>
-          )}
-          {pins.map((location) => (
-            <article
-              className={`intelligence-result-card glass-surface ${activeId === location.id ? "is-active" : ""}`}
-              key={location.id}
-              ref={(element) => {
-                if (element) cardRefs.current[location.id] = element;
-              }}
-              tabIndex={0}
-              role="button"
-              onMouseEnter={() => setActiveId(location.id)}
-              onMouseLeave={() => setActiveId(null)}
-              onFocus={() => setActiveId(location.id)}
-              onBlur={() => setActiveId(null)}
-              onClick={() => focusLocation(location.id)}
-              onKeyDown={(event) => handleKeyDown(event, location.id)}
-            >
-              <div className={`intelligence-result-icon icon-${location.type}`}>
-                {location.type === "photo_op" ? <Camera size={20} /> : <Gem size={20} />}
-              </div>
-              <div>
-                <div className="intelligence-card-head">
-                  <h3>{location.name}</h3>
-                  <span>{labelForType(location.type)}</span>
-                </div>
-                <p>{location.description}</p>
-                <div className="intelligence-meta">
-                  <MapPin size={14} />
-                  <span>{formatMeters(location.distance)} away</span>
-                  <Star size={14} />
-                  <span>{Number(location.rating || 0) > 0 ? Number(location.rating).toFixed(1) : "Unrated"}</span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </aside>
-    </section>
-  );
-}
-
-function SignupPrompt() {
-  const { setModal } = useOffTrail();
-  return (
-    <Modal title="Create your archive" onClose={() => setModal(null)}>
-      <p>Sign in to save routes, revisit hidden gems, and build your personal discovery archive.</p>
-      <button className="solid-action" type="button" onClick={() => setModal("auth")}>Sign Up</button>
     </Modal>
   );
 }
@@ -4887,7 +3479,7 @@ function parseUrlState() {
   const modalParam = params.get("modal");
   const pageParam = params.get("page");
   const viewParam = params.get("view");
-  const allowedViews = new Set(["home", "routeDiscovery", "nearby", "layover", "results", "itinerary", "dashboard", "favorites", "profile", "routeDetail", "error"]);
+  const allowedViews = new Set(["home", "routeDiscovery", "nearby", "layover", "results", "itinerary", "dashboard", "favorites", "profile", "routeDetail"]);
   return {
     modal: modalParam ? modalFromUrlMap[modalParam] || null : null,
     menuOpen: params.get("menu") === "main",

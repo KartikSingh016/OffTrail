@@ -88,17 +88,19 @@ export async function searchOsmPlaces(center: LatLng, radiusKm: number, filters:
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "User-Agent": OSM_USER_AGENT
+      const data = await fetchJson<OverpassResponse>(
+        endpoint,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "User-Agent": OSM_USER_AGENT
+          },
+          signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
+          body: `data=${encodeURIComponent(query)}`
         },
-        signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
-        body: `data=${encodeURIComponent(query)}`
-      });
-      if (!response.ok) continue;
-      const data = (await response.json()) as OverpassResponse;
+        "Overpass API"
+      );
       return (data.elements || []).flatMap((element) => mapOsmElement(element, center));
     } catch {
       continue;
@@ -131,15 +133,17 @@ export async function searchNominatimPlaces(
         url.searchParams.set("bounded", "1");
       }
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": OSM_USER_AGENT
+      const data = await fetchJson<NominatimPlace[]>(
+        url.toString(),
+        {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": OSM_USER_AGENT
+          },
+          signal: AbortSignal.timeout(5000)
         },
-        signal: AbortSignal.timeout(5000)
-      });
-      if (!response.ok) continue;
-      const data = (await response.json()) as NominatimPlace[];
+        "Nominatim Search"
+      );
       const mapped = data.flatMap((place) => mapNominatimPlace(place));
       results.push(...(anchor ? mapped.filter((place) => haversineMeters(anchor, place) <= 90000) : mapped));
     } catch {
@@ -170,15 +174,17 @@ export async function searchNominatimAround(
       url.searchParams.set("viewbox", `${box.west},${box.north},${box.east},${box.south}`);
       url.searchParams.set("bounded", "1");
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": OSM_USER_AGENT
+      const data = await fetchJson<NominatimPlace[]>(
+        url.toString(),
+        {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": OSM_USER_AGENT
+          },
+          signal: AbortSignal.timeout(5000)
         },
-        signal: AbortSignal.timeout(5000)
-      });
-      if (!response.ok) continue;
-      const data = (await response.json()) as NominatimPlace[];
+        "Nominatim Search"
+      );
       results.push(
         ...data
           .flatMap((place) => mapNominatimPlace(place))
@@ -298,14 +304,14 @@ function mapNominatimPlace(place: NominatimPlace): PlaceCandidate[] {
       photos: [osmStaticMapUrl({ lat, lng })],
       description: fallbackDescription(name, category),
       address: place.display_name || "OpenStreetMap verified place",
-      isHiddenGem: false,
+      isHiddenGem: isHiddenGem(rating, ratingCount),
       detourDistance: "0 km",
       estimatedTime: defaultVisitTime(category),
       provider: "osm",
       sourceIds: [id],
       rawCategories,
       detourMeters: 0,
-      hiddenGemScore: 0
+      hiddenGemScore: hiddenGemScore(rating, ratingCount, category)
     }
   ];
 }

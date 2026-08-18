@@ -11,8 +11,7 @@ const allowedViews = new Set([
   "dashboard",
   "favorites",
   "profile",
-  "routeDetail",
-  "error"
+  "routeDetail"
 ]);
 
 const allowedContentPages = new Set(["how"]);

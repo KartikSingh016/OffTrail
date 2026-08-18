@@ -79,9 +79,14 @@ function readNumber(input: unknown, field: string) {
   return value;
 }
 
+const MAX_LAYOVERS = 10;
+
 function readLayovers(input: unknown): LayoverInput[] {
   if (input === undefined) return [];
   if (!Array.isArray(input)) throw new ValidationError("layovers must be an array.");
+  if (input.length > MAX_LAYOVERS) {
+    throw new ValidationError(`layovers cannot exceed ${MAX_LAYOVERS} stops.`);
+  }
 
   return input.map((layover, index) => {
     if (!layover || typeof layover !== "object") {

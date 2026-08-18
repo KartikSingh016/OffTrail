@@ -1,13 +1,11 @@
 const CATEGORY_WEIGHTS: Record<string, number> = {
   viewpoint: 1.5,
   garden: 1.4,
-  park: 1.3,
   nature: 1.3,
   cafe: 1.2,
   food: 1.1,
   culture: 1,
-  "photo-op": 1.35,
-  hidden: 1.25
+  "photo-op": 1.35
 };
 
 const GOOGLE_CATEGORY_MAP: Array<[string[], string]> = [
@@ -56,13 +54,11 @@ export function defaultVisitTime(category: string) {
   const times: Record<string, number> = {
     viewpoint: 25,
     garden: 35,
-    park: 40,
     nature: 45,
     cafe: 35,
     food: 50,
     culture: 55,
-    "photo-op": 25,
-    hidden: 30
+    "photo-op": 25
   };
   return times[category] || 30;
 }
@@ -71,15 +67,13 @@ export function fallbackDescription(name: string, category: string) {
   const descriptions: Record<string, string> = {
     viewpoint: `${name} offers a scenic pause with strong photo potential near your route.`,
     garden: `${name} is a calm green stop worth a short detour.`,
-    park: `${name} adds fresh air, space, and local texture to the journey.`,
     nature: `${name} brings a natural escape close to your route.`,
     cafe: `${name} is a relaxed local stop for coffee and a reset.`,
     food: `${name} is a convenient food stop with local flavor.`,
     culture: `${name} adds architecture, history, or art to the route.`,
-    "photo-op": `${name} is a photogenic stop that can turn the route into a memory.`,
-    hidden: `${name} looks like an underrated stop with discovery potential.`
+    "photo-op": `${name} is a photogenic stop that can turn the route into a memory.`
   };
-  return descriptions[category] || descriptions.hidden;
+  return descriptions[category] || `${name} looks like an underrated stop with discovery potential.`;
 }
 
 export function hiddenGemScore(rating: number, ratingCount: number, category: string) {

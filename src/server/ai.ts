@@ -82,7 +82,7 @@ function buildPrompt(locations: PlaceCandidate[]) {
   return `Given these places: ${JSON.stringify(compact)}.
 For each place, generate:
 1) A 1-sentence compelling description, 20 words max.
-2) Best category tag from: nature, photo-op, food, culture, hidden, cafe, viewpoint, garden, park.
+2) Best category tag from: nature, photo-op, food, culture, cafe, viewpoint, garden.
 3) Estimated visit time in minutes.
 Return JSON only as an array of objects with keys: id, description, category, estimatedTime.`;
 }

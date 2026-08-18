@@ -40,6 +40,13 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
 
+  if (!req.body || typeof req.body !== "object") {
+    return res.status(400).json({ error: "Request body must be a JSON object." });
+  }
+  if (req.body.categories !== undefined && !Array.isArray(req.body.categories)) {
+    return res.status(400).json({ error: "categories must be an array." });
+  }
+
   const input = req.body as LocationIntelligenceRequest;
   const latitude = Number(input.latitude);
   const longitude = Number(input.longitude);
