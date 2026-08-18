@@ -37,6 +37,7 @@ import {
   XCircle
 } from "lucide-react";
 import RouteCinematic from "../components/RouteCinematic.jsx";
+import RouteLoadingMap from "../components/RouteLoadingMap.jsx";
 
 const videoUrl =
   "https://cdn.pixabay.com/video/2024/03/25/205589-927335742_large.mp4";
@@ -1321,13 +1322,7 @@ function RouteMapPlannerPage({
 
       <section className="route-map-main" aria-label="Route map">
         {loading ? (
-          <AnimatedRouteMap
-            route={results?.route}
-            locations={results?.locations || []}
-            variant="journey"
-            scanStage={scanStage}
-            loading={loading}
-          />
+          <RouteLoadingMap originLabel={startLabel} destLabel={endLabel} scanStage={scanStage} radiusKm={radius} />
         ) : (
           <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
         )}
@@ -1341,16 +1336,18 @@ function RouteMapPlannerPage({
           <strong>to</strong>
           <span>{endLabel}</span>
         </div>
-        <div className="route-map-bottom-cards">
-          <article>
-            <div><MapPin size={18} /><strong>{routeDistance}</strong></div>
-            <div><Clock size={18} /><strong>{routeDuration}</strong></div>
-          </article>
-          <article>
-            <span><i /> Scenic Route</span>
-            <span><i className="is-water" /> Waterfalls</span>
-          </article>
-        </div>
+        {!loading && (
+          <div className="route-map-bottom-cards">
+            <article>
+              <div><MapPin size={18} /><strong>{routeDistance}</strong></div>
+              <div><Clock size={18} /><strong>{routeDuration}</strong></div>
+            </article>
+            <article>
+              <span><i /> Scenic Route</span>
+              <span><i className="is-water" /> Waterfalls</span>
+            </article>
+          </div>
+        )}
         <div className="route-map-controls" aria-label="Map controls">
           <button type="button" onClick={() => notify("Zoom controls are visual until map providers are enabled.")}>+</button>
           <button type="button" onClick={() => notify("Zoom controls are visual until map providers are enabled.")}>-</button>
@@ -1362,13 +1359,6 @@ function RouteMapPlannerPage({
             <strong>No verified route loaded</strong>
             <p>{discoveryState?.message || "Use the planner to check provider-backed routes. OffTrail will not invent stops when source data is unavailable."}</p>
             {discoveryState?.type && <button type="button" onClick={onSubmit}>Try again</button>}
-          </article>
-        )}
-        {loading && (
-          <article className="route-map-state is-loading" role="status" aria-live="polite">
-            <Loader2 className="spin" size={26} />
-            <strong>{scanStageHeadline(scanStage)}</strong>
-            <p>Checking real routes and verified stop data.</p>
           </article>
         )}
       </section>
