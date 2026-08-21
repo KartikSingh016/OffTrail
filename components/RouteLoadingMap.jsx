@@ -9,9 +9,6 @@ import React, { useEffect, useRef, useState } from "react";
    fallback path rather than pulling in d3/topojson just for faint
    background country outlines. */
 
-const ACCENT = "#63c2b0";
-const ACCENT_GLOW = "#63c2b066";
-
 // Schematic curve control points, matching the source design's own
 // no-geodata fallback (quadratic bezier in a 1124x900 viewBox).
 const ORIGIN_PT = [840, 322];
