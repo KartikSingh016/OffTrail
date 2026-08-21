@@ -7316,7 +7316,6 @@ img {
 .route-map-bg,
 .route-map-wash,
 .route-map-curve,
-.route-map-title-ribbon,
 .route-map-topbar,
 .route-map-label,
 .route-map-bottom-cards,
@@ -7352,45 +7351,6 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.route-map-title-ribbon {
-  z-index: 5;
-  top: 3.4rem;
-  right: 5%;
-  display: grid;
-  gap: 0.15rem;
-  transform: rotate(-5deg);
-  color: #f4f4ef;
-  text-transform: uppercase;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
-.route-map-title-ribbon span {
-  padding: 0.55rem 1.35rem;
-  border-radius: 0.35rem;
-  background: #1d3152;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
-  max-width: min(42vw, 32rem);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.route-map-title-ribbon span:last-child {
-  background: #db714c;
-}
-
-.route-map-title-ribbon strong {
-  place-self: center;
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  background: #182531;
-  font-size: 0.75rem;
 }
 
 .route-map-bottom-cards {
@@ -7534,9 +7494,6 @@ img {
   }
 .route-map-main {
     min-height: 740px;
-  }
-.route-map-title-ribbon {
-    display: none;
   }
 .route-map-state,
   .route-map-results {

@@ -1331,11 +1331,6 @@ function RouteMapPlannerPage({
           <strong>OffTrail</strong>
           <button type="button" aria-label="Save route" onClick={() => notify("Save route after a verified route is loaded.")}><Heart size={18} /></button>
         </div>
-        <div className="route-map-title-ribbon" aria-hidden="true">
-          <span>{startLabel}</span>
-          <strong>to</strong>
-          <span>{endLabel}</span>
-        </div>
         {!loading && (
           <div className="route-map-bottom-cards">
             <article>
