@@ -1656,17 +1656,6 @@ h1 {
     rgba(13, 14, 14, 0.52);
 }
 
-.map-terrain-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.34;
-  filter: grayscale(0.55) contrast(1.16) saturate(0.72);
-  transform: scale(1.05);
-}
-
 .animated-route-map.hero,
 .animated-route-map.journey,
 .animated-route-map.results {
@@ -1723,6 +1712,28 @@ h1 {
   animation-delay: 1.15s;
 }
 
+.route-comet-glow,
+.route-comet-line {
+  fill: none;
+  stroke: #eefaf6;
+  stroke-linecap: round;
+  animation: routeComet 6s linear infinite;
+  animation-delay: 2.8s;
+}
+
+.route-comet-glow {
+  stroke: #7cd5d5;
+  stroke-width: 5;
+  stroke-dasharray: 0.03 0.97;
+  opacity: 0.45;
+  filter: blur(2.5px);
+}
+
+.route-comet-line {
+  stroke-width: 1.6;
+  stroke-dasharray: 0.012 0.988;
+}
+
 .map-endpoint,
 .floating-route-pin,
 .radar-pin {
@@ -1731,7 +1742,7 @@ h1 {
 }
 
 .map-endpoint {
-  z-index: 5;
+  z-index: 9;
   display: grid;
   justify-items: center;
   gap: 0.35rem;
@@ -1743,16 +1754,35 @@ h1 {
 }
 
 .map-endpoint span {
+  position: relative;
+  z-index: 1;
   width: 0.95rem;
   height: 0.95rem;
   border-radius: 999px;
   background: var(--wf-primary);
+  border: 2px solid rgba(233, 241, 237, 0.92);
   box-shadow: 0 0 20px rgba(180, 203, 198, 0.75);
 }
 
 .map-endpoint.is-end span {
   background: var(--wf-tertiary);
   box-shadow: 0 0 20px rgba(124, 213, 213, 0.75);
+}
+
+.map-endpoint-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin: -1.1rem 0 0 -1.1rem;
+  border: 1px solid rgba(143, 227, 205, 0.55);
+  border-radius: 999px;
+  animation: mapEndpointRing 2.6s ease-out infinite;
+}
+
+.map-endpoint.is-end .map-endpoint-ring {
+  animation-delay: 0.8s;
 }
 
 .floating-route-pin {
@@ -2107,6 +2137,29 @@ h1 {
   }
 }
 
+@keyframes routeComet {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes mapEndpointRing {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
 @keyframes pinReveal {
   from {
     opacity: 0;
@@ -2238,6 +2291,16 @@ h1 {
     radial-gradient(circle at 54% 42%, rgba(124, 213, 213, 0.16), transparent 25%),
     linear-gradient(135deg, rgba(180, 203, 198, 0.08), transparent 42%),
     rgba(7, 13, 12, 0.84);
+}
+
+/* Layered depth in place of the old stretched 1x1px "terrain" stub image,
+   which rendered as a flat color wash rather than any real texture. */
+.animated-route-map.results {
+  background:
+    radial-gradient(ellipse 62% 55% at 40% 36%, rgba(124, 213, 213, 0.14), transparent 62%),
+    radial-gradient(ellipse 50% 45% at 72% 72%, rgba(180, 203, 198, 0.1), transparent 65%),
+    repeating-radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.03) 0, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 30px),
+    linear-gradient(158deg, #101c1a 0%, #0b1613 48%, #070d0c 100%);
 }
 
 .route-planner-card,
@@ -3528,11 +3591,6 @@ img {
   border-bottom-right-radius: 1.6rem;
 }
 
-.animated-route-map.is-scanning .map-terrain-image,
-.animated-route-map.has-route .map-terrain-image {
-  animation: stitchTerrainDrift 11s ease-in-out infinite alternate;
-}
-
 .animated-route-map.is-scanning .map-atmosphere::after {
   position: absolute;
   content: "";
@@ -3649,15 +3707,6 @@ img {
   display: none;
 }
 
-@keyframes stitchTerrainDrift {
-  from {
-    transform: scale(1.05) translate3d(-0.8%, -0.6%, 0);
-  }
-  to {
-    transform: scale(1.1) translate3d(1%, 0.8%, 0);
-  }
-}
-
 @keyframes stitchMapSweep {
   from {
     transform: translateX(-40%);
@@ -3769,6 +3818,13 @@ img {
   --ot-error: #ffb4ab;
   --ot-outline-variant: #424846;
   --ot-on-surface-variant: #c2c8c5;
+  /* --wf-* ("wilderness") tokens are referenced by 16+ rules (map endpoint
+     dots, route lines, wilderness-glass accents) but were never defined in
+     any :root block - same orphaned-token bug as --font-* earlier. Alias to
+     the already-active --ot-* palette instead of inventing new colors. */
+  --wf-primary: var(--ot-primary);
+  --wf-secondary: var(--ot-secondary);
+  --wf-tertiary: var(--ot-tertiary);
 }
 
 .font-label-caps {

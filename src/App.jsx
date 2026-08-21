@@ -2052,6 +2052,8 @@ function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelec
   }));
   const startLabel = route?.segments?.[0]?.from || "Origin";
   const endLabel = route?.segments?.at?.(-1)?.to || "Destination";
+  const originPoint = routeBounds && route?.path?.length ? toPercent({ lat: route.path[0][0], lng: route.path[0][1] }, routeBounds) : null;
+  const destPoint = routeBounds && route?.path?.length ? toPercent({ lat: route.path[route.path.length - 1][0], lng: route.path[route.path.length - 1][1] }, routeBounds) : null;
   const hasVerifiedRoute = Boolean(routePath);
   const routeStatus = hasVerifiedRoute ? "VERIFIED ROUTE" : loading ? "CHECKING REAL ROUTE" : "AWAITING SCAN";
   const coordinateLabel = hasVerifiedRoute
@@ -2060,7 +2062,6 @@ function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelec
 
   return (
     <section className={`animated-route-map ${variant} scan-${scanStage} ${loading ? "is-scanning" : ""} ${hasVerifiedRoute ? "has-route" : "no-route"}`} aria-label="Animated route map">
-      <img className="map-terrain-image" src={stitchMapUrl} alt="" aria-hidden="true" />
       <div className="map-atmosphere" />
       <div className="stitch-map-frame" aria-hidden="true">
         <span /><span /><span /><span />
@@ -2074,6 +2075,8 @@ function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelec
         </defs>
         {hasVerifiedRoute && <path className="route-shadow-line" d={routePath} />}
         {hasVerifiedRoute && <path className="route-active-line" d={routePath} stroke={`url(#routeGradient-${variant})`} pathLength="1" />}
+        {hasVerifiedRoute && <path className="route-comet-glow" d={routePath} pathLength="1" />}
+        {hasVerifiedRoute && <path className="route-comet-line" d={routePath} pathLength="1" />}
         {hasVerifiedRoute && pins.map((pin) => (
           <path
             key={`line-${pin.id}`}
@@ -2101,14 +2104,18 @@ function AnimatedRouteMap({ route, locations = [], selected = new Set(), onSelec
           <small>OffTrail only renders verified routes and real place signals.</small>
         </div>
       )}
-      {hasVerifiedRoute && (
+      {hasVerifiedRoute && originPoint && destPoint && (
         <>
-          <div className="map-endpoint is-start" style={{ left: "10%", top: "78%" }}>
-            <span />
+          <div className="map-endpoint is-start" style={{ left: `${originPoint.x}%`, top: `${originPoint.y}%` }}>
+            <span>
+              <i className="map-endpoint-ring" />
+            </span>
             <strong>{startLabel}</strong>
           </div>
-          <div className="map-endpoint is-end" style={{ left: "88%", top: "18%" }}>
-            <span />
+          <div className="map-endpoint is-end" style={{ left: `${destPoint.x}%`, top: `${destPoint.y}%` }}>
+            <span>
+              <i className="map-endpoint-ring" />
+            </span>
             <strong>{endLabel}</strong>
           </div>
         </>
@@ -3436,16 +3443,42 @@ function routeLocationPoint(location, index = 0, bounds = null, routePath = []) 
   return points[index % points.length];
 }
 
+function downsamplePoints(points, maxPoints) {
+  if (points.length <= maxPoints) return points;
+  const step = (points.length - 1) / (maxPoints - 1);
+  const result = [];
+  for (let i = 0; i < maxPoints; i += 1) result.push(points[Math.round(i * step)]);
+  return result;
+}
+
+// Real road-traced GPS points zigzag at the density OSRM returns them; a
+// Catmull-Rom spline through a thinned-out set of points reads as a real
+// road instead of a jagged polyline.
+function smoothPathFromPoints(points) {
+  if (points.length < 3) {
+    return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
+  }
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+
 function routePathData(path = [], bounds = null) {
   if (!bounds || !Array.isArray(path) || path.length < 2) {
     return "M 10 78 C 27 72 32 34 51 38 S 72 78 88 18";
   }
-  return path
-    .map(([lat, lng], index) => {
-      const point = toPercent({ lat, lng }, bounds);
-      return `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
-    })
-    .join(" ");
+  const points = downsamplePoints(path, 80).map(([lat, lng]) => toPercent({ lat, lng }, bounds));
+  return smoothPathFromPoints(points);
 }
 
 function closestRoutePoint(point, routePath = []) {
