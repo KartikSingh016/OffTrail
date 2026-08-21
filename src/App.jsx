@@ -37,7 +37,7 @@ import {
   XCircle
 } from "lucide-react";
 import RouteCinematic from "../components/RouteCinematic.jsx";
-import RouteLoadingMap from "../components/RouteLoadingMap.jsx";
+import RouteGlobeLoader from "../components/RouteGlobeLoader.jsx";
 
 const videoUrl =
   "https://cdn.pixabay.com/video/2024/03/25/205589-927335742_large.mp4";
@@ -1322,7 +1322,7 @@ function RouteMapPlannerPage({
 
       <section className="route-map-main" aria-label="Route map">
         {loading ? (
-          <RouteLoadingMap originLabel={startLabel} destLabel={endLabel} scanStage={scanStage} radiusKm={radius} />
+          <RouteGlobeLoader originLabel={startLabel} destLabel={endLabel} scanStage={scanStage} />
         ) : (
           <IllustratedRouteMap startLabel={startLabel} endLabel={endLabel} />
         )}
