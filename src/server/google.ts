@@ -221,7 +221,7 @@ function getGoogleTypesFromPreferences(preferences: string[]) {
 export async function fetchGooglePlaceDetail(placeId: string) {
   if (!serverEnv.googleMapsApiKey) {
     throw new HttpError(
-      "Google place details are disabled in no-bill mode. Enable paid providers only after setting usage quotas.",
+      "Place details are temporarily unavailable.",
       503,
       "Paid Google providers disabled or missing GOOGLE_MAPS_API_KEY"
     );

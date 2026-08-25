@@ -48,7 +48,7 @@ function toPublicDiscoveryError(error: unknown): { status: number; body: ErrorRe
     return {
       status: 503,
       body: {
-        error: "Verified route discovery is in no-bill mode. No paid route provider is enabled, so OffTrail will not calculate or invent a route.",
+        error: "Verified route discovery is temporarily unavailable. Please try again shortly.",
         code: "ROUTING_NOT_CONFIGURED",
         needsConfiguration: true
       }

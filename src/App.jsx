@@ -3583,7 +3583,7 @@ function classifyDiscoveryError(message = "") {
 function friendlyDiscoveryMessage(error = {}, fallback = "") {
   const message = error.message || "";
   if (/ROUTING_NOT_CONFIGURED|GOOGLE_MAPS_API_KEY|OFFTRAIL_ALLOW|API key|provider|Routes API|not configured/i.test(message)) {
-    return "Verified route discovery is not configured yet. Add a Google Maps server key with Routes and Places enabled, then retry.";
+    return "Verified route discovery is temporarily unavailable. Please try again shortly.";
   }
   if (error.type === "coordinates") {
     return message || "That location could not be verified. Check the spelling or try a nearby station, landmark, or city center.";

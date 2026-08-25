@@ -13,7 +13,6 @@ OffTrail plans a route between two places and surfaces only the stops it can ver
 - **Saved gems** — bookmark places locally with personal notes and one-tap map directions
 - **Real-photo verification** — results are filtered to places with a genuine photo (sourced from the provider or Wikipedia), never a generic map pin passed off as a picture
 - **Summer / winter theming** — the entire site, including destination imagery, adapts to the season you're planning for
-- **No-bill by default** — runs entirely on free providers (OpenStreetMap/Overpass, Nominatim, OSRM, Wikipedia) out of the box; paid providers are opt-in and quota-gated
 
 ## Tech Stack
 
@@ -38,7 +37,7 @@ npm install
 
 ### Configure environment variables (optional)
 
-OffTrail works out of the box with no configuration — it runs entirely on free, keyless providers. Copy `.env.example` to `.env.local` only if you want to enable paid providers or persistence:
+OffTrail runs with sensible defaults out of the box. Copy `.env.example` to `.env.local` if you want to enable additional providers or persistence:
 
 ```bash
 cp .env.example .env.local
@@ -46,7 +45,7 @@ cp .env.example .env.local
 
 | Variable | Purpose |
 | --- | --- |
-| `OFFTRAIL_ENABLE_PAID_PROVIDERS` | Master switch for Google Places / Foursquare. Keep `false` until quotas and budget alerts are set up. |
+| `OFFTRAIL_ENABLE_PAID_PROVIDERS` | Master switch for Google Places / Foursquare. |
 | `OFFTRAIL_ENABLE_AI_ENRICHMENT` | Enables Anthropic-powered description/category enrichment. |
 | `OFFTRAIL_ENABLE_HOSTED_PERSISTENCE` | Enables Supabase-backed saved routes. |
 | `NEXT_PUBLIC_OFFTRAIL_ENABLE_PAID_MAP_PREVIEWS` | Enables client-side Google static map previews. |
@@ -94,4 +93,4 @@ OffTrail never fabricates a place, a photo, or a route. If a provider can't veri
 
 ## Deployment
 
-The app is a standard Next.js project and deploys to any Next.js-compatible host (e.g. Vercel). Set the environment variables you need from the table above in your host's dashboard before enabling paid providers.
+The app is a standard Next.js project and deploys to any Next.js-compatible host (e.g. Vercel). Set the environment variables you need from the table above in your host's dashboard.
