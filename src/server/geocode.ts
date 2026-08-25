@@ -1,5 +1,6 @@
 import { serverEnv } from "./env";
 import { fetchJson } from "./retry";
+import { haversineMeters } from "./geo";
 import type { LatLng } from "./types";
 
 export type PlaceSuggestion = LatLng & {
@@ -162,6 +163,59 @@ export async function autocompletePlaces(query: string) {
     rememberAutocomplete(cacheKey, suggestions);
     return suggestions;
   }
+}
+
+const KNOWN_PLACE_RADIUS_METERS = 15000;
+
+export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  const nearestKnown = knownPlaces
+    .map((place) => ({ place, distance: haversineMeters({ lat, lng }, place) }))
+    .filter((entry) => entry.distance <= KNOWN_PLACE_RADIUS_METERS)
+    .sort((a, b) => a.distance - b.distance)[0];
+  if (nearestKnown) return nearestKnown.place.name;
+
+  if (serverEnv.googleMapsApiKey) {
+    try {
+      const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+      url.searchParams.set("latlng", `${lat},${lng}`);
+      url.searchParams.set("key", serverEnv.googleMapsApiKey);
+      const response = await fetchJson<GoogleGeocodeResponse>(url.toString(), {}, "Google Reverse Geocoding");
+      const result = response.results?.[0];
+      const locality = result?.address_components?.find((component) =>
+        component.types?.some((type) => type === "locality" || type === "postal_town")
+      )?.long_name;
+      if (locality) return locality;
+    } catch {
+      // Fall through to Nominatim.
+    }
+  }
+
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/reverse");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("lat", String(lat));
+    url.searchParams.set("lon", String(lng));
+    url.searchParams.set("zoom", "12");
+    url.searchParams.set("addressdetails", "1");
+    const response = await fetch(url.toString(), {
+      headers: { Accept: "application/json", "Accept-Language": "en", "User-Agent": NOMINATIM_USER_AGENT }
+    });
+    if (response.ok) {
+      const data = (await response.json()) as {
+        address?: Record<string, string>;
+        display_name?: string;
+      };
+      const address = data.address || {};
+      const name =
+        address.city || address.town || address.village || address.municipality || address.county;
+      if (name) return name;
+      if (data.display_name) return firstDisplayNamePart(data.display_name);
+    }
+  } catch {
+    // Fall through to the generic label below.
+  }
+
+  return "Current location";
 }
 
 export async function geocodePlace(query: string): Promise<PlaceSuggestion> {

@@ -274,6 +274,7 @@ function stripInternalFields(location: PlaceCandidate): LocationResult {
     address: location.address,
     isHiddenGem: location.isHiddenGem,
     detourDistance: location.detourDistance,
+    detourMeters: location.detourMeters,
     estimatedTime: location.estimatedTime,
     photo: location.photo || location.photos[0],
     isOpenAtArrival: location.isOpenAtArrival,

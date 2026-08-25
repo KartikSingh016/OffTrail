@@ -1,5 +1,7 @@
+import { TtlCache } from "./cache";
 import { defaultVisitTime, fallbackDescription, hiddenGemScore, isHiddenGem, normalizeCategory } from "./category";
 import { decodeGooglePolyline, formatDistance, formatDuration, haversineMeters, routeDistanceMeters } from "./geo";
+import { createRateLimiter } from "./rateLimit";
 import { fetchJson, HttpError } from "./retry";
 import type { LatLng, PlaceCandidate, RouteSummary } from "./types";
 
@@ -29,6 +31,11 @@ type NominatimPlace = {
   lon?: string;
   type?: string;
   class?: string;
+  extratags?: {
+    image?: string;
+    wikipedia?: string;
+    wikimedia_commons?: string;
+  };
 };
 
 const OVERPASS_ENDPOINTS = [
@@ -115,7 +122,8 @@ export async function searchOsmCorridor(centers: LatLng[], radiusKm: number, fil
         },
         "Overpass API"
       );
-      return (data.elements || []).flatMap((element) => mapOsmElement(element, anchor));
+      const mapped = await Promise.all((data.elements || []).map((element) => mapOsmElement(element, anchor)));
+      return mapped.flat();
     } catch {
       continue;
     }
@@ -144,6 +152,7 @@ export async function searchNominatimPlaces(
       url.searchParams.set("format", "json");
       url.searchParams.set("limit", "4");
       url.searchParams.set("addressdetails", "1");
+      url.searchParams.set("extratags", "1");
       url.searchParams.set("q", query);
       if (anchor) {
         const box = viewboxAround(anchor);
@@ -162,7 +171,7 @@ export async function searchNominatimPlaces(
         },
         "Nominatim Search"
       );
-      const mapped = data.flatMap((place) => mapNominatimPlace(place));
+      const mapped = (await Promise.all(data.map((place) => mapNominatimPlace(place)))).flat();
       results.push(...(anchor ? mapped.filter((place) => haversineMeters(anchor, place) <= 90000) : mapped));
     } catch {
       continue;
@@ -187,6 +196,7 @@ export async function searchNominatimAround(
       url.searchParams.set("format", "json");
       url.searchParams.set("limit", "6");
       url.searchParams.set("addressdetails", "1");
+      url.searchParams.set("extratags", "1");
       url.searchParams.set("q", term);
       const box = viewboxAround(center, radiusKm);
       url.searchParams.set("viewbox", `${box.west},${box.north},${box.east},${box.south}`);
@@ -203,11 +213,8 @@ export async function searchNominatimAround(
         },
         "Nominatim Search"
       );
-      results.push(
-        ...data
-          .flatMap((place) => mapNominatimPlace(place))
-          .filter((place) => haversineMeters(center, place) <= maxDistance)
-      );
+      const mapped = (await Promise.all(data.map((place) => mapNominatimPlace(place)))).flat();
+      results.push(...mapped.filter((place) => haversineMeters(center, place) <= maxDistance));
     } catch {
       continue;
     }
@@ -257,12 +264,29 @@ function osmClausesFromFilters(filters: string[]) {
   return clauses.size ? Array.from(clauses) : ['["name"]["tourism"]', '["name"]["leisure"]', '["name"]["amenity"]'];
 }
 
-function mapOsmElement(element: OverpassElement, center: LatLng): PlaceCandidate[] {
+// OSM tags a famous grave/memorial can carry alongside `tourism=attraction`
+// (e.g. Beethoven's grave in Bonn), which otherwise slips into "viewpoint" or
+// "photo-op" corridor searches even though a headstone isn't a scenic view.
+const GRAVE_OR_CEMETERY_TAGS: Record<string, Set<string>> = {
+  historic: new Set(["tomb", "grave"]),
+  amenity: new Set(["grave_yard"]),
+  landuse: new Set(["cemetery"])
+};
+
+function isGraveOrCemetery(tags: Record<string, string>) {
+  return Object.entries(GRAVE_OR_CEMETERY_TAGS).some(([key, values]) => {
+    const value = tags[key];
+    return typeof value === "string" && values.has(value.toLowerCase());
+  });
+}
+
+async function mapOsmElement(element: OverpassElement, center: LatLng): Promise<PlaceCandidate[]> {
   const tags = element.tags || {};
   const name = tags.name || tags["name:en"];
   const lat = element.lat ?? element.center?.lat;
   const lng = element.lon ?? element.center?.lon;
   if (!name || typeof lat !== "number" || typeof lng !== "number") return [];
+  if (isGraveOrCemetery(tags)) return [];
 
   const rawCategories = [
     tags.tourism,
@@ -275,7 +299,7 @@ function mapOsmElement(element: OverpassElement, center: LatLng): PlaceCandidate
   const category = normalizeCategory(rawCategories, name);
   const id = `osm:${element.type}:${element.id}`;
   const distance = haversineMeters(center, { lat, lng });
-  const photo = osmImageFor(tags, { lat, lng });
+  const photo = await osmImageFor(tags, { lat, lng });
   const rating = 0;
   const ratingCount = 0;
 
@@ -303,18 +327,20 @@ function mapOsmElement(element: OverpassElement, center: LatLng): PlaceCandidate
   ];
 }
 
-function mapNominatimPlace(place: NominatimPlace): PlaceCandidate[] {
+async function mapNominatimPlace(place: NominatimPlace): Promise<PlaceCandidate[]> {
   const lat = Number(place.lat);
   const lng = Number(place.lon);
   const name = place.name || firstDisplayNamePart(place.display_name || "");
   if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) return [];
   if (!isInterestingNominatimPlace(place, name)) return [];
+  if (place.class && place.type && isGraveOrCemetery({ [place.class]: place.type })) return [];
 
   const rawCategories = [place.class, place.type].filter(Boolean) as string[];
   const category = normalizeCategory(rawCategories, name);
   const id = `osm:${place.osm_type || "place"}:${place.osm_id || place.place_id || `${lat},${lng}`}`;
   const rating = 0;
   const ratingCount = 0;
+  const photo = await osmImageFor(place.extratags || {}, { lat, lng });
 
   return [
     {
@@ -325,7 +351,7 @@ function mapNominatimPlace(place: NominatimPlace): PlaceCandidate[] {
       category,
       rating,
       ratingCount,
-      photos: [osmStaticMapUrl({ lat, lng })],
+      photos: [photo],
       description: fallbackDescription(name, category),
       address: place.display_name || "OpenStreetMap verified place",
       isHiddenGem: isHiddenGem(rating, ratingCount),
@@ -415,7 +441,46 @@ function viewboxAround(point: LatLng, radiusKm = 90) {
   };
 }
 
-function osmImageFor(tags: Record<string, string>, point: LatLng) {
+// Most OSM POIs carry no `image`/`wikimedia_commons` tag, but tourist
+// attractions and viewpoints (exactly what "cinematic view" style filters
+// target) are commonly cross-referenced to a Wikipedia article via a
+// `wikipedia` tag - its lead photo is a real photo of the real place, and
+// the summary API is free/keyless, so it meaningfully raises how often a
+// genuine photo is available without needing a paid Places API key.
+const wikipediaImageCache = new TtlCache<string | null>(24 * 60 * 60 * 1000);
+const wikipediaLimiter = createRateLimiter(5, 1000);
+
+async function wikipediaImageFor(tags: Record<string, string>): Promise<string | null> {
+  const raw = tags.wikipedia;
+  if (!raw) return null;
+  const separator = raw.indexOf(":");
+  if (separator === -1) return null;
+  const lang = raw.slice(0, separator).trim();
+  const title = raw.slice(separator + 1).trim();
+  if (!lang || !title) return null;
+
+  const cacheKey = `${lang}:${title}`;
+  const cached = wikipediaImageCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
+  try {
+    const data = await wikipediaLimiter(() =>
+      fetchJson<{ thumbnail?: { source?: string }; originalimage?: { source?: string } }>(
+        `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+        { headers: { "User-Agent": OSM_USER_AGENT }, signal: AbortSignal.timeout(4000) },
+        "Wikipedia Summary"
+      )
+    );
+    const image = data.originalimage?.source || data.thumbnail?.source || null;
+    wikipediaImageCache.set(cacheKey, image);
+    return image;
+  } catch {
+    wikipediaImageCache.set(cacheKey, null);
+    return null;
+  }
+}
+
+async function osmImageFor(tags: Record<string, string>, point: LatLng) {
   const image = tags.image;
   if (image?.startsWith("http://") || image?.startsWith("https://")) return image;
 
@@ -423,6 +488,9 @@ function osmImageFor(tags: Record<string, string>, point: LatLng) {
   if (commons?.startsWith("File:")) {
     return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(commons.replace(/^File:/, ""))}?width=640`;
   }
+
+  const wikipediaImage = await wikipediaImageFor(tags);
+  if (wikipediaImage) return wikipediaImage;
 
   return osmStaticMapUrl(point);
 }

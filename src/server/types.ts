@@ -78,6 +78,7 @@ export type LocationResult = {
   address: string;
   isHiddenGem: boolean;
   detourDistance: string;
+  detourMeters?: number;
   estimatedTime: number;
   photo?: string;
   isOpenAtArrival?: boolean;
