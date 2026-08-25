@@ -441,7 +441,7 @@ function OffTrailApp() {
     <main className={`app-shell ${usesFoundationShell ? "uses-foundation-shell" : ""}`}>
       {!usesFoundationShell && (
         <>
-          <video className="background-video" src={videoUrl} autoPlay loop muted playsInline poster={thumbnailUrl} aria-hidden="true" />
+          <video className="background-video" src={videoUrl} autoPlay loop muted playsInline aria-hidden="true" />
           <div className="video-shade" aria-hidden="true" />
         </>
       )}
@@ -468,7 +468,7 @@ function OffTrailApp() {
 }
 
 function LandingPage() {
-  const { navigateTo, setMenuOpen, setAccountOpen, accountOpen, auth, setModal, setRouteState, notify, openContent, setJourneyCountry, season } = useOffTrail();
+  const { navigateTo, setMenuOpen, setAccountOpen, accountOpen, auth, setModal, setRouteState, notify, setJourneyCountry, season } = useOffTrail();
   const plannerRef = useRef(null);
   const fromInputRef = useRef(null);
   const [from, setFrom] = useState("");
@@ -698,11 +698,6 @@ function LandingPage() {
             <p>Precision route intelligence for travelers who seek depth and precision over superficial trends.</p>
             <small>© 2026 OffTrail Intelligence. All rights reserved.</small>
           </div>
-          <nav aria-label="Footer navigation">
-            <a href={viewHref("nearby")} onClick={(event) => handleViewNavigation(event, navigateTo, "nearby")}>Nearby</a>
-            <a href={viewHref("favorites")} onClick={(event) => handleViewNavigation(event, navigateTo, "favorites")}>Saved Gems</a>
-            <button type="button" onClick={() => openContent("how")}>How It Works</button>
-          </nav>
         </div>
       </footer>
       <BottomNavBar active="explore" />

@@ -7701,9 +7701,7 @@ img {
 }
 
 .stitch-v2-footer .stitch-v2-container {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 32px;
+  display: block;
 }
 
 .stitch-v2-footer strong {
