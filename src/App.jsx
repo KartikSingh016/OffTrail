@@ -20,7 +20,6 @@ import {
   Loader2,
   LogOut,
   Mail,
-  Map as MapIcon,
   MapPin,
   Menu,
   Navigation,
@@ -83,8 +82,6 @@ const heroVibeOptions = [
   { key: "hidden", label: "Hidden local spots" },
   { key: "rain", label: "Rainy day" }
 ];
-
-const travelModeOptions = ["Train", "Car", "Walking", "Cycling"];
 
 const detourOptions = [
   { label: "15 min", radius: 2 },
@@ -438,7 +435,7 @@ function OffTrailProvider({ children, initialView = null, initialContentPage = n
 
 function OffTrailApp() {
   const { view, modal, toast, closeOverlay, notify } = useOffTrail();
-  const usesFoundationShell = view === "home" || view === "routeDiscovery" || view === "nearby" || view === "layover" || view === "countryJourney" || view === "results";
+  const usesFoundationShell = view === "home" || view === "routeDiscovery" || view === "nearby" || view === "layover" || view === "countryJourney" || view === "results" || view === "favorites";
 
   return (
     <main className={`app-shell ${usesFoundationShell ? "uses-foundation-shell" : ""}`}>
@@ -479,7 +476,6 @@ function LandingPage() {
   const [originCoords, setOriginCoords] = useState(null);
   const [originIsGeolocated, setOriginIsGeolocated] = useState(false);
   const [locatingOrigin, setLocatingOrigin] = useState(false);
-  const [travelMode, setTravelMode] = useState("Train");
   const [detourValue, setDetourValue] = useState(1);
   const [departureTime, setDepartureTime] = useState(toDatetimeLocal(new Date(Date.now() + 86400000)));
   const [vibe, setVibe] = useState(heroVibeOptions[0].key);
@@ -545,7 +541,7 @@ function LandingPage() {
       layovers: [],
       preferences: Array.from(new Set([vibe, "hidden"])),
       radius: selectedDetour.radius,
-      travelMode,
+      travelMode: "Train",
       routeStyle,
       departureTime,
       results: null,
@@ -625,27 +621,6 @@ function LandingPage() {
                 onChange={(event) => setDepartureTime(event.target.value)}
                 aria-label="Travel date and time"
               />
-            </div>
-
-            <div className="sd-field-block">
-              <span className="sd-field-label">Travel Mode</span>
-              <div className="sd-pill-row" role="group" aria-label="Travel mode">
-                {travelModeOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    className={travelMode === option ? "is-active" : ""}
-                    aria-pressed={travelMode === option}
-                    onClick={() => setTravelMode(option)}
-                  >
-                    {option === "Train" && <Navigation size={13} />}
-                    {option === "Car" && <MapIcon size={13} />}
-                    {option === "Walking" && <MapPin size={13} />}
-                    {option === "Cycling" && <Compass size={13} />}
-                    {option}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div className="sd-field-block">
@@ -3032,53 +3007,86 @@ function FavoritesPage() {
     notify("Saved gems cleared from this device.");
   }
 
+  const backgroundImage = favorites.length ? placeImageUrl(favorites[0]) : null;
+
   return (
-    <section className="app-page dashboard-page">
-      <PageTopbar title="Saved Gems" />
-      {favorites.length > 0 && (
-        <div className="saved-gems-toolbar liquid-glass">
-          <span>Saved on this device. Account sync can be added later.</span>
-          <button type="button" onClick={clearFavorites}>Clear all</button>
-        </div>
-      )}
-      <div className="dashboard-grid">
-        {favorites.length === 0 && (
-          <EmptyState
-            title="No gems saved yet"
-            description="Start exploring and tap the bookmark icon to build your personal travel map. Saved gems are stored on this device until account sync is configured."
-            action="Explore Nearby"
-            onAction={() => navigateTo("nearby")}
-          />
-        )}
-        {favorites.map((location) => (
-          <article className="saved-route-card liquid-glass" key={location.id}>
-            <img src={placeImageUrl(location)} alt={location.name} onError={(event) => handlePlaceImageError(event, location)} />
-            <h3>{location.name}</h3>
-            <p>{[location.category, detourLabel(location), sourceLabel(location)].filter(Boolean).join(" - ")}</p>
-            <small>Saved on this device</small>
-            <label className="saved-note-field">
-              <span>Personal note</span>
-              <textarea
-                value={location.note || ""}
-                onChange={(event) => updateNote(location.id, event.target.value)}
-                placeholder="Why did you save this place?"
-                rows={3}
-              />
-            </label>
-            <div className="saved-gem-actions">
-              <a href={googleDirectionsUrl(location)} target="_blank" rel="noopener noreferrer">
-                Open in map
-                <ExternalLink size={14} />
-              </a>
-              <button type="button" onClick={() => removeFavorite(location.id)}>
-                Remove
-                <Trash2 size={14} />
+    <section className="jt-page">
+      {backgroundImage && <div className="jt-page-bg" style={{ backgroundImage: `url(${backgroundImage})` }} aria-hidden="true" />}
+      <TopAppBar active="saved" />
+      <main className="jt-main">
+        <header className="jt-hero">
+          <span className="jt-eyebrow">Your Collection</span>
+          <h1>Saved Gems</h1>
+          <p>Places you have bookmarked while exploring, stored on this device until account sync is configured.</p>
+          {favorites.length > 0 && (
+            <div className="jt-hero-actions">
+              <span className="jt-hero-stat">{favorites.length} saved</span>
+              <button className="jt-save-btn" type="button" onClick={clearFavorites}>
+                <Trash2 size={16} />
+                Clear all
               </button>
             </div>
+          )}
+        </header>
+
+        {favorites.length === 0 ? (
+          <article className="discovery-state-card is-idle" role="status" aria-live="polite">
+            <div className="dsc-rings" aria-hidden="true"><span /><span /></div>
+            <div className="dsc-mark">
+              <Heart size={40} />
+            </div>
+            <h3>No Gems Saved Yet</h3>
+            <p>Tap the bookmark icon on any place to start building your personal travel map.</p>
+            <div className="dsc-actions">
+              <button className="sd-submit-btn dsc-primary" type="button" onClick={() => navigateTo("nearby")}>Explore Nearby</button>
+            </div>
           </article>
-        ))}
-      </div>
+        ) : (
+          <div className="jt-saved-grid">
+            {favorites.map((location) => (
+              <SavedGemCard
+                key={location.id}
+                location={location}
+                onRemove={() => removeFavorite(location.id)}
+                onNoteChange={(note) => updateNote(location.id, note)}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+      <BottomNavBar active="saved" />
     </section>
+  );
+}
+
+function SavedGemCard({ location, onRemove, onNoteChange }) {
+  const image = placeImageUrl(location);
+  return (
+    <article className="jt-saved-card glass-card">
+      <img className="jt-saved-card-image" src={image} alt={location.name} onError={(event) => handlePlaceImageError(event, location)} />
+      <div className="jt-saved-card-body">
+        <h2>{location.name}</h2>
+        <span className="jt-stop-region">{[location.category, detourLabel(location), sourceLabel(location)].filter(Boolean).join(" - ")}</span>
+        <label className="jt-saved-note">
+          <span>Personal note</span>
+          <textarea
+            value={location.note || ""}
+            onChange={(event) => onNoteChange(event.target.value)}
+            placeholder="Why did you save this place?"
+            rows={2}
+          />
+        </label>
+        <div className="jt-stop-actions">
+          <a className="jt-icon-btn" href={googleDirectionsUrl(location)} target="_blank" rel="noopener noreferrer" aria-label={`Directions to ${location.name}`}>
+            <Navigation size={14} />
+          </a>
+          <button type="button" className="jt-add-btn" onClick={onRemove}>
+            <Trash2 size={14} />
+            Remove
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 

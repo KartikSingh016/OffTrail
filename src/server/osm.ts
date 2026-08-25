@@ -94,16 +94,38 @@ export async function calculateOsrmRoute(origin: LatLng, destination: LatLng, la
 }
 
 // A single Overpass query that checks all `centers` at once (via a multi-point
-// `around` filter) instead of one HTTP round trip per point. Route-corridor
-// search used to fire one query per sampled point, each re-scanning heavily
-// overlapping search areas - that multiplied both request count and server-side
-// cost enough to reliably time out the public Overpass instance, which silently
-// dropped the whole corridor search down to a much weaker origin/destination-only
-// fallback. One combined query is both cheaper for the server and the
-// architecturally standard way to do this kind of search.
+// `around` filter) instead of one HTTP round trip per point - firing one query
+// per sampled point re-scans heavily overlapping search areas and multiplies
+// both request count and server-side cost. But one combined query doesn't scale
+// either: for a long route (e.g. a 600km+ international trip) or a corridor
+// through a densely-mapped area, a single query spanning 40 "around" circles
+// reliably blows Overpass's own internal timeout and comes back as a 200 OK
+// with zero elements - which silently starves the whole route of real
+// candidates and drops discovery down to a much weaker origin/destination-only
+// fallback (see discovery.ts's searchRealOsmCorridor), making every long route
+// through the same origin look like it returned "the same stops". Splitting the
+// corridor into smaller batches run in parallel keeps each query cheap enough to
+// usually finish, and an expensive/dense batch timing out only costs that one
+// stretch of the route instead of the whole search.
+const OVERPASS_CHUNK_SIZE = 8;
+const overpassChunkLimiter = createRateLimiter(4, 1000);
+
 export async function searchOsmCorridor(centers: LatLng[], radiusKm: number, filters: string[] = []): Promise<PlaceCandidate[]> {
   if (!centers.length) return [];
   const radiusMeters = Math.min(Math.max(Math.round(radiusKm * 1000), 500), 12000);
+
+  const chunks: LatLng[][] = [];
+  for (let i = 0; i < centers.length; i += OVERPASS_CHUNK_SIZE) {
+    chunks.push(centers.slice(i, i + OVERPASS_CHUNK_SIZE));
+  }
+
+  const results = await Promise.allSettled(
+    chunks.map((chunk) => overpassChunkLimiter(() => fetchOverpassChunk(chunk, radiusMeters, filters)))
+  );
+  return results.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+}
+
+async function fetchOverpassChunk(centers: LatLng[], radiusMeters: number, filters: string[]): Promise<PlaceCandidate[]> {
   const query = buildOverpassQuery(centers, radiusMeters, filters);
   const anchor = centers[0];
 

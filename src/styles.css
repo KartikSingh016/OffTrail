@@ -9056,6 +9056,72 @@ img {
   border-color: transparent;
 }
 
+.jt-saved-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.jt-saved-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.jt-saved-card-image {
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+  display: block;
+}
+
+.jt-saved-card-body {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.jt-saved-card-body h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--ot-on-surface);
+}
+
+.jt-saved-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.jt-saved-note span {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ot-on-surface-variant);
+  opacity: 0.75;
+}
+
+.jt-saved-note textarea {
+  resize: vertical;
+  min-height: 3.2rem;
+  padding: 8px 10px;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(215, 195, 176, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--ot-on-surface);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+
+.jt-saved-note textarea:focus {
+  outline: none;
+  border-color: var(--ot-primary);
+}
+
 .jt-cta-bar {
   position: fixed;
   bottom: 0;
