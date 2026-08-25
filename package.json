@@ -1,5 +1,5 @@
 {
-  "name": "offtrail-landing",
+  "name": "offtrail",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -18,5 +18,22 @@
   "devDependencies": {
     "@types/node": "25.9.1",
     "@types/react": "19.2.15"
-  }
+  },
+  "description": "A verified route-discovery travel app that surfaces real, map-checked stops along a journey, near you, or during a layover — no invented places, ever.",
+  "author": "Kartik Singh",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KartikSingh016/OffTrail.git"
+  },
+  "homepage": "https://github.com/KartikSingh016/OffTrail#readme",
+  "bugs": {
+    "url": "https://github.com/KartikSingh016/OffTrail/issues"
+  },
+  "keywords": [
+    "travel",
+    "route-planning",
+    "nextjs",
+    "openstreetmap",
+    "react"
+  ]
 }
